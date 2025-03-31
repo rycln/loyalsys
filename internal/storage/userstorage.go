@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/rycln/loyalsys/internal/models"
 )
 
 var (
@@ -28,19 +29,27 @@ func NewUserStorage(db *sql.DB) *UserStorage {
 	return &UserStorage{db: db}
 }
 
-func (us *UserStorage) AddUser(ctx context.Context, user *UserDB) error {
+func (us *UserStorage) AddUser(ctx context.Context, user *UserDB) (models.UserID, error) {
 	tx, err := us.db.Begin()
 	if err != nil {
-		return err
+		return 0, err
 	}
-	_, err = tx.ExecContext(ctx, sqlAddUser, user.Login, user.PasswordHash)
+	res, err := tx.ExecContext(ctx, sqlAddUser, user.Login, user.PasswordHash)
 	if err != nil {
 		tx.Rollback()
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return ErrConflict
+			return 0, ErrConflict
 		}
-		return err
+		return 0, err
 	}
-	return tx.Commit()
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return 0, err
+	}
+	return models.UserID(id), nil
 }
