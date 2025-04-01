@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/rycln/loyalsys/internal/auth"
+	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/rycln/loyalsys/internal/storage"
 )
@@ -16,9 +19,10 @@ type regServicer interface {
 
 type RegisterHandler struct {
 	regService regServicer
+	cfg        *config.Cfg
 }
 
-func NewRegisterHandler(regService regServicer) func(*fiber.Ctx) error {
+func NewRegisterHandler(regService regServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
 	h := &RegisterHandler{
 		regService: regService,
 	}
@@ -36,7 +40,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	id, err := h.regService.CreateUser(c.Context(), &user)
+	uid, err := h.regService.CreateUser(c.Context(), &user)
 	if errors.Is(err, storage.ErrConflict) {
 		return c.SendStatus(fiber.StatusConflict)
 	}
@@ -44,4 +48,11 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
+	jwt, err := auth.NewJWTString(uid, h.cfg.Key)
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	c.Set("Content-Type", "application/json")
+	c.Set("Authorization", fmt.Sprintf("Bearer %s", jwt))
+	return c.SendStatus(fiber.StatusOK)
 }

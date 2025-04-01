@@ -43,7 +43,7 @@ func (us *UserStorage) AddUser(ctx context.Context, user *UserDB) (models.UserID
 		}
 		return 0, err
 	}
-	id, err := res.LastInsertId()
+	uid, err := res.LastInsertId()
 	if err != nil {
 		return 0, err
 	}
@@ -51,5 +51,5 @@ func (us *UserStorage) AddUser(ctx context.Context, user *UserDB) (models.UserID
 	if err != nil {
 		return 0, err
 	}
-	return models.UserID(id), nil
+	return models.UserID(uid), nil
 }
