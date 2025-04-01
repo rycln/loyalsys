@@ -30,25 +30,14 @@ func NewUserStorage(db *sql.DB) *UserStorage {
 }
 
 func (us *UserStorage) AddUser(ctx context.Context, user *UserDB) (models.UserID, error) {
-	tx, err := us.db.Begin()
+	row := us.db.QueryRowContext(ctx, sqlAddUser, user.Login, user.PasswordHash)
+	var uid int64
+	err := row.Scan(&uid)
 	if err != nil {
-		return 0, err
-	}
-	res, err := tx.ExecContext(ctx, sqlAddUser, user.Login, user.PasswordHash)
-	if err != nil {
-		tx.Rollback()
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 			return 0, ErrConflict
 		}
-		return 0, err
-	}
-	uid, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-	err = tx.Commit()
-	if err != nil {
 		return 0, err
 	}
 	return models.UserID(uid), nil

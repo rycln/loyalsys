@@ -2,7 +2,6 @@ package storage
 
 import (
 	"database/sql"
-	"os"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -26,7 +25,8 @@ func NewDB(dsn string) (*sql.DB, error) {
 	db.SetConnMaxIdleTime(maxIdleTime)
 	db.SetConnMaxLifetime(maxConnLifetime)
 
-	goose.SetBaseFS(os.DirFS("migrations"))
+	//добавить embed
+	//goose.SetBaseFS(os.DirFS("migrations"))
 	err = goose.Up(db, "migrations")
 	if err != nil {
 		return nil, err

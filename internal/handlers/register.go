@@ -9,8 +9,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/config"
+	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/rycln/loyalsys/internal/storage"
+	"go.uber.org/zap"
 )
 
 type regServicer interface {
@@ -25,6 +27,7 @@ type RegisterHandler struct {
 func NewRegisterHandler(regService regServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
 	h := &RegisterHandler{
 		regService: regService,
+		cfg:        cfg,
 	}
 	return h.handle
 }
@@ -37,6 +40,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 	var user models.User
 	err := json.Unmarshal(c.Body(), &user)
 	if err != nil {
+		logger.Log.Info("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
@@ -45,11 +49,13 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	if err != nil {
+		logger.Log.Info("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
 	jwt, err := auth.NewJWTString(uid, h.cfg.Key)
 	if err != nil {
+		logger.Log.Info("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	c.Set("Content-Type", "application/json")

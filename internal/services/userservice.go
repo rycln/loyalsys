@@ -9,8 +9,8 @@ import (
 )
 
 type userStorager interface {
-	AddUser(context.Context, storage.UserDB) (models.UserID, error)
-	GetUserByLogin(context.Context, string) (storage.UserDB, error)
+	AddUser(context.Context, *storage.UserDB) (models.UserID, error)
+	//GetUserByLogin(context.Context, string) (storage.UserDB, error)
 }
 
 type UserService struct {
@@ -30,13 +30,14 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) (models
 		Login:        user.Login,
 		PasswordHash: hash,
 	}
-	id, err := s.strg.AddUser(ctx, *userDB)
+	id, err := s.strg.AddUser(ctx, userDB)
 	if err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
+/*
 // добавить отдельные ошибки для отсутсвтия юзера и на неправильный пароль
 func (us *UserService) UserAuth(ctx context.Context, user *models.User) error {
 	userDB, err := us.strg.GetUserByLogin(ctx, user.Login)
@@ -49,3 +50,4 @@ func (us *UserService) UserAuth(ctx context.Context, user *models.User) error {
 	}
 	return nil
 }
+*/
