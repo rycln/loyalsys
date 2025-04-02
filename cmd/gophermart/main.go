@@ -13,18 +13,19 @@ import (
 )
 
 func main() {
-	err := logger.LogInit()
+	cfg := config.NewCfg()
+
+	err := logger.LogInit(cfg.LogLevel)
 	if err != nil {
 		log.Fatalf("Can't initialize the logger: %v", err)
 	}
 	defer logger.Log.Sync()
 
-	cfg := config.NewCfg()
-
 	db, err := storage.NewDB(cfg.DatabaseDsn)
 	if err != nil {
 		log.Fatalf("Can't open database: %v", err)
 	}
+
 	userstrg := storage.NewUserStorage(db)
 
 	userservice := services.NewUserService(userstrg)
