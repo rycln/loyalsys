@@ -11,12 +11,12 @@ func LogInit(level string) error {
 	if err != nil {
 		return err
 	}
+
 	cfg := zap.NewDevelopmentConfig()
 	cfg.Level = lvl
-	if lvl != zap.DebugLevel {
-
+	if cfg.Level.Level() != zap.DebugLevel {
+		cfg.DisableCaller = true
 	}
-	cfg.DisableCaller = true
 
 	zl, err := cfg.Build()
 	if err != nil {
