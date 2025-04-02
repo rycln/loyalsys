@@ -9,7 +9,7 @@ import (
 
 type userStorager interface {
 	AddUser(context.Context, *models.UserDB) (models.UserID, error)
-	//GetUserByLogin(context.Context, string) (storage.UserDB, error)
+	GetUserByLogin(context.Context, string) (models.UserDB, error)
 }
 
 type UserService struct {

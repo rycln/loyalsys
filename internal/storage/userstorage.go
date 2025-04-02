@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrConflict = errors.New("login already registered")
+	ErrNoUser   = errors.New("user does not exist")
 )
 
 type UserStorage struct {
@@ -23,8 +24,8 @@ func NewUserStorage(db *sql.DB) *UserStorage {
 	return &UserStorage{db: db}
 }
 
-func (us *UserStorage) AddUser(ctx context.Context, user *models.UserDB) (models.UserID, error) {
-	row := us.db.QueryRowContext(ctx, sqlAddUser, user.Login, user.PasswordHash)
+func (s *UserStorage) AddUser(ctx context.Context, user *models.UserDB) (models.UserID, error) {
+	row := s.db.QueryRowContext(ctx, sqlAddUser, user.Login, user.PasswordHash)
 	var uid int64
 	err := row.Scan(&uid)
 	if err != nil {
@@ -35,4 +36,17 @@ func (us *UserStorage) AddUser(ctx context.Context, user *models.UserDB) (models
 		return 0, err
 	}
 	return models.UserID(uid), nil
+}
+
+func (s *UserStorage) GetUserByLogin(ctx context.Context, login string) (*models.UserDB, error) {
+	row := s.db.QueryRowContext(ctx, sqlGetUserByLogin, login)
+	var userDB models.UserDB
+	err := row.Scan(&userDB.ID, &userDB.Login, &userDB.PasswordHash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNoUser
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &userDB, nil
 }
