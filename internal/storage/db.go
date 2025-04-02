@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"github.com/rycln/loyalsys/db"
 )
 
 const (
@@ -16,20 +17,19 @@ const (
 )
 
 func NewDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", dsn)
+	database, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(maxOpenConns)
-	db.SetMaxIdleConns(maxIdleConns)
-	db.SetConnMaxIdleTime(maxIdleTime)
-	db.SetConnMaxLifetime(maxConnLifetime)
+	database.SetMaxOpenConns(maxOpenConns)
+	database.SetMaxIdleConns(maxIdleConns)
+	database.SetConnMaxIdleTime(maxIdleTime)
+	database.SetConnMaxLifetime(maxConnLifetime)
 
-	//добавить embed
-	//goose.SetBaseFS(os.DirFS("migrations"))
-	err = goose.Up(db, "migrations")
+	goose.SetBaseFS(db.Migrations)
+	err = goose.Up(database, "migrations")
 	if err != nil {
 		return nil, err
 	}
-	return db, nil
+	return database, nil
 }

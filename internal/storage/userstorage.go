@@ -15,12 +15,6 @@ var (
 	ErrConflict = errors.New("login already registered")
 )
 
-type UserDB struct {
-	ID           int64
-	Login        string
-	PasswordHash string
-}
-
 type UserStorage struct {
 	db *sql.DB
 }
@@ -29,7 +23,7 @@ func NewUserStorage(db *sql.DB) *UserStorage {
 	return &UserStorage{db: db}
 }
 
-func (us *UserStorage) AddUser(ctx context.Context, user *UserDB) (models.UserID, error) {
+func (us *UserStorage) AddUser(ctx context.Context, user *models.UserDB) (models.UserID, error) {
 	row := us.db.QueryRowContext(ctx, sqlAddUser, user.Login, user.PasswordHash)
 	var uid int64
 	err := row.Scan(&uid)

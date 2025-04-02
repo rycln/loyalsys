@@ -5,11 +5,10 @@ import (
 
 	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
 )
 
 type userStorager interface {
-	AddUser(context.Context, *storage.UserDB) (models.UserID, error)
+	AddUser(context.Context, *models.UserDB) (models.UserID, error)
 	//GetUserByLogin(context.Context, string) (storage.UserDB, error)
 }
 
@@ -26,7 +25,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) (models
 	if err != nil {
 		return 0, err
 	}
-	userDB := &storage.UserDB{
+	userDB := &models.UserDB{
 		Login:        user.Login,
 		PasswordHash: hash,
 	}
