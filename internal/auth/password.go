@@ -1,8 +1,12 @@
 package auth
 
 import (
+	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrWrongPassword = errors.New("wrong password")
 
 func HashPassword(password string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -10,5 +14,9 @@ func HashPassword(password string) (string, error) {
 }
 
 func CompareHashAndPassword(hashed, plain string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain))
+	err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain))
+	if err != nil {
+		return ErrWrongPassword
+	}
+	return nil
 }
