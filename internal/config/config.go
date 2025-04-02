@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	defaultServerAddr = ":8080"
-	defultTimeout     = time.Duration(2) * time.Minute
-	defaultKeyLength  = 10
+	defaultServerAddr  = ":8080"
+	defultTimeout      = time.Duration(2) * time.Minute
+	defaultKeyLength   = 10
+	defaultLoggerLevel = "info"
 )
 
 type Cfg struct {
@@ -20,6 +21,7 @@ type Cfg struct {
 	AccrualAddr string        `env:"ACCRUAL_SYSTEM_ADDRESS"`
 	Timeout     time.Duration `env:"TIMEOUT_DUR"`
 	Key         string        `env:"KEY"`
+	LogLevel    string        `env:"-"`
 }
 
 func NewCfg() *Cfg {
@@ -30,6 +32,7 @@ func NewCfg() *Cfg {
 	flag.StringVar(&cfg.AccrualAddr, "r", "", "Accrual connection address (environment variable ACCRUAL_SYSTEM_ADDRESS has higher priority)")
 	flag.DurationVar(&cfg.Timeout, "t", defultTimeout, "Timeout duration in seconds (environment variable TIMEOUT_DUR has higher priority)")
 	flag.StringVar(&cfg.Key, "k", "", "Key for jwt autorization (environment variable KEY has higher priority)")
+	flag.StringVar(&cfg.LogLevel, "l", defaultLoggerLevel, "Logger level")
 	flag.Parse()
 
 	err := env.Parse(cfg)

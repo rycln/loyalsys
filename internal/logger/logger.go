@@ -6,9 +6,16 @@ import (
 
 var Log *zap.Logger = zap.NewNop()
 
-func LogInit() error {
+func LogInit(level string) error {
+	lvl, err := zap.ParseAtomicLevel(level)
+	if err != nil {
+		return err
+	}
 	cfg := zap.NewDevelopmentConfig()
-	cfg.Level.SetLevel(zap.InfoLevel)
+	cfg.Level = lvl
+	if lvl != zap.DebugLevel {
+
+	}
 	cfg.DisableCaller = true
 
 	zl, err := cfg.Build()
