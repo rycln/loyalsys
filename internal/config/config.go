@@ -17,7 +17,7 @@ const (
 
 type Cfg struct {
 	RunAddr     string        `env:"RUN_ADDRESS"`
-	DatabaseDsn string        `env:"DATABASE_DSN"`
+	DatabaseURI string        `env:"DATABASE_URI"`
 	AccrualAddr string        `env:"ACCRUAL_SYSTEM_ADDRESS"`
 	Timeout     time.Duration `env:"TIMEOUT_DUR"`
 	Key         string        `env:"KEY"`
@@ -28,7 +28,7 @@ func NewCfg() *Cfg {
 	cfg := &Cfg{}
 
 	flag.StringVar(&cfg.RunAddr, "a", defaultServerAddr, "Address and port to start the server (environment variable RUN_ADDRESS has higher priority)")
-	flag.StringVar(&cfg.DatabaseDsn, "d", "", "Database connection address (environment variable DATABASE_DSN has higher priority)")
+	flag.StringVar(&cfg.DatabaseURI, "d", "", "Database connection address (environment variable DATABASE_URI has higher priority)")
 	flag.StringVar(&cfg.AccrualAddr, "r", "", "Accrual connection address (environment variable ACCRUAL_SYSTEM_ADDRESS has higher priority)")
 	flag.DurationVar(&cfg.Timeout, "t", defultTimeout, "Timeout duration in seconds (environment variable TIMEOUT_DUR has higher priority)")
 	flag.StringVar(&cfg.Key, "k", "", "Key for jwt autorization (environment variable KEY has higher priority)")

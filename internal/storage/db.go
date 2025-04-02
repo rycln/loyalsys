@@ -16,8 +16,8 @@ const (
 	maxConnLifetime = 0 //unlimited
 )
 
-func NewDB(dsn string) (*sql.DB, error) {
-	database, err := sql.Open("pgx", dsn)
+func NewDB(uri string) (*sql.DB, error) {
+	database, err := sql.Open("pgx", uri)
 	if err != nil {
 		return nil, err
 	}

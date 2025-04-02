@@ -23,7 +23,7 @@ func main() {
 	}
 	defer logger.Log.Sync()
 
-	db, err := storage.NewDB(cfg.DatabaseDsn)
+	db, err := storage.NewDB(cfg.DatabaseURI)
 	if err != nil {
 		log.Fatalf("Can't open database: %v", err)
 	}
