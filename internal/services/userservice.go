@@ -29,21 +29,21 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) (models
 		Login:        user.Login,
 		PasswordHash: hash,
 	}
-	id, err := s.strg.AddUser(ctx, userDB)
+	uid, err := s.strg.AddUser(ctx, userDB)
 	if err != nil {
 		return 0, err
 	}
-	return id, nil
+	return uid, nil
 }
 
-func (s *UserService) UserAuth(ctx context.Context, user *models.User) error {
+func (s *UserService) UserAuth(ctx context.Context, user *models.User) (models.UserID, error) {
 	userDB, err := s.strg.GetUserByLogin(ctx, user.Login)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	err = auth.CompareHashAndPassword(userDB.PasswordHash, user.Password)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return models.UserID(userDB.ID), nil
 }

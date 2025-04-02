@@ -15,24 +15,24 @@ import (
 	"go.uber.org/zap"
 )
 
-type regServicer interface {
-	CreateUser(context.Context, *models.User) (models.UserID, error)
+type loginServicer interface {
+	UserAuth(context.Context, *models.User) (models.UserID, error)
 }
 
-type RegisterHandler struct {
-	regService regServicer
-	cfg        *config.Cfg
+type LoginHandler struct {
+	loginService loginServicer
+	cfg          *config.Cfg
 }
 
-func NewRegisterHandler(regService regServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
-	h := &RegisterHandler{
-		regService: regService,
-		cfg:        cfg,
+func NewLoginHandler(loginService loginServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
+	h := &LoginHandler{
+		loginService: loginService,
+		cfg:          cfg,
 	}
 	return h.handle
 }
 
-func (h *RegisterHandler) handle(c *fiber.Ctx) error {
+func (h *LoginHandler) handle(c *fiber.Ctx) error {
 	if !c.Is("json") {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
@@ -44,9 +44,10 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 
-	uid, err := h.regService.CreateUser(c.Context(), &user)
-	if errors.Is(err, storage.ErrConflict) {
-		return c.SendStatus(fiber.StatusConflict)
+	uid, err := h.loginService.UserAuth(c.Context(), &user)
+	if errors.Is(err, storage.ErrNoUser) || errors.Is(err, auth.ErrWrongPassword) {
+		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
+		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 	if err != nil {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
