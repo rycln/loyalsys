@@ -33,10 +33,6 @@ func NewRegisterHandler(regService regServicer, cfg *config.Cfg) func(*fiber.Ctx
 }
 
 func (h *RegisterHandler) handle(c *fiber.Ctx) error {
-	if !c.Is("json") {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-
 	var user models.User
 	err := json.Unmarshal(c.Body(), &user)
 	if err != nil {

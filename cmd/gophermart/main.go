@@ -10,6 +10,7 @@ import (
 	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/handlers"
 	"github.com/rycln/loyalsys/internal/logger"
+	"github.com/rycln/loyalsys/internal/middleware"
 	"github.com/rycln/loyalsys/internal/services"
 	"github.com/rycln/loyalsys/internal/storage"
 	"go.uber.org/zap/zapcore"
@@ -45,12 +46,12 @@ func main() {
 		Fields: []string{"url", "method", "latency", "status", "bytesSent"},
 		Levels: []zapcore.Level{zapcore.InfoLevel},
 	}))
-	app.Post("/api/user/register", timeout.NewWithContext(registerHandler, cfg.Timeout))
-	app.Post("/api/user/login", timeout.NewWithContext(loginHandler, cfg.Timeout))
+	app.Post("/api/user/register", middleware.ContentTypeChecker("application/json"), timeout.NewWithContext(registerHandler, cfg.Timeout))
+	app.Post("/api/user/login", middleware.ContentTypeChecker("application/json"), timeout.NewWithContext(loginHandler, cfg.Timeout))
 	app.Use(jwtware.New(jwtware.Config{
 		SigningKey: jwtware.SigningKey{Key: []byte(cfg.Key)},
 	}))
-	app.Post("/api/user/orders", timeout.NewWithContext(postOrderHandler, cfg.Timeout))
+	app.Post("/api/user/orders", middleware.ContentTypeChecker("text/plain"), timeout.NewWithContext(postOrderHandler, cfg.Timeout))
 
 	err = app.Listen(cfg.RunAddr)
 	if err != nil {
