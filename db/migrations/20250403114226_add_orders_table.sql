@@ -6,7 +6,7 @@ CREATE TABLE orders (
     user_id REFERENCES users(id) NOT NULL, 
     status VARCHAR(255) DEFAULT 'NEW',
     accrual INT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP 
 );
 -- +goose StatementEnd
 
