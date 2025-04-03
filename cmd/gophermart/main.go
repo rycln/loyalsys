@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gofiber/contrib/fiberzap/v2"
+	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
 	"github.com/rycln/loyalsys/internal/config"
@@ -29,11 +30,14 @@ func main() {
 	}
 
 	userstrg := storage.NewUserStorage(db)
+	orderstrg := storage.NewOrderStorage(db)
 
 	userservice := services.NewUserService(userstrg)
+	orderservice := services.NewOrderService(orderstrg)
 
 	registerHandler := handlers.NewRegisterHandler(userservice, cfg)
 	loginHandler := handlers.NewLoginHandler(userservice, cfg)
+	postOrderHandler := handlers.NewPostOrderHandler(orderservice, cfg)
 
 	app := fiber.New()
 	app.Use(fiberzap.New(fiberzap.Config{
@@ -43,6 +47,10 @@ func main() {
 	}))
 	app.Post("/api/user/register", timeout.NewWithContext(registerHandler, cfg.Timeout))
 	app.Post("/api/user/login", timeout.NewWithContext(loginHandler, cfg.Timeout))
+	app.Use(jwtware.New(jwtware.Config{
+		SigningKey: jwtware.SigningKey{Key: []byte(cfg.Key)},
+	}))
+	app.Post("/api/user/orders", timeout.NewWithContext(postOrderHandler, cfg.Timeout))
 
 	err = app.Listen(cfg.RunAddr)
 	if err != nil {
