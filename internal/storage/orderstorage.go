@@ -23,21 +23,12 @@ func NewOrderStorage(db *sql.DB) *OrderStorage {
 	return &OrderStorage{db: db}
 }
 
-func (s *OrderStorage) AddOrder(ctx context.Context, order models.Order) error {
-	checkOrder, err := s.GetOrderByNum(ctx, order.Number)
-	if errors.Is(err, ErrNoOrder) {
-		_, err = s.db.ExecContext(ctx, sqlAddOrder, order.Number, order.UserID)
-		if err != nil {
-			return err
-		}
-	}
+func (s *OrderStorage) AddOrder(ctx context.Context, order *models.Order) error {
+	_, err := s.db.ExecContext(ctx, sqlAddOrder, order.Number, order.UserID)
 	if err != nil {
 		return err
 	}
-	if checkOrder.UserID == order.UserID {
-		return ErrOrderExists
-	}
-	return ErrOrderConflict
+	return nil
 }
 
 func (s *OrderStorage) GetOrderByNum(ctx context.Context, number string) (*models.OrderDB, error) {
