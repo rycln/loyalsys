@@ -32,19 +32,21 @@ func NewPostOrderHandler(postOrderService postOrderServicer, cfg *config.Cfg) fu
 }
 
 func (h *PostOrderHandler) handle(c *fiber.Ctx) error {
-	if !c.Is("text/plain") {
-		return c.SendStatus(fiber.StatusBadRequest)
+	token, ok := c.Locals("user").(*jwt.Token)
+	if !ok {
+		return c.SendStatus(fiber.StatusInternalServerError)
 	}
-
-	t := c.Locals("user").(*jwt.Token)
-	claims := t.Claims.(auth.JwtClaims)
-	uid := claims.GetUserID()
+	uid, err := auth.ParseIDFromJWT(token)
+	if err != nil {
+		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 
 	order := &models.Order{
 		Number: string(c.Body()),
 		UserID: uid,
 	}
-	err := h.postOrderService.SaveOrder(c.Context(), order)
+	err = h.postOrderService.SaveOrder(c.Context(), order)
 	if errors.Is(err, services.ErrOrderExists) {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusOK)
