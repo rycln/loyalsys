@@ -3,6 +3,8 @@ package middleware
 import (
 	"strings"
 
+	"slices"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -13,10 +15,8 @@ func ContentTypeChecker(allowedTypes ...string) fiber.Handler {
 		mimeType := strings.Split(contentType, ";")[0]
 		mimeType = strings.TrimSpace(mimeType)
 
-		for _, allowedType := range allowedTypes {
-			if mimeType == allowedType {
-				return c.Next()
-			}
+		if slices.Contains(allowedTypes, mimeType) {
+			return c.Next()
 		}
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
