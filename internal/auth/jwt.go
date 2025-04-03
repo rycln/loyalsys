@@ -12,17 +12,17 @@ var ErrInvalidJWT = errors.New("invalid jwt")
 
 const tokenExp = time.Hour * 2
 
-type jwtClaims struct {
+type JwtClaims struct {
 	jwt.RegisteredClaims
 	UserID models.UserID `json:"id"`
 }
 
-func (claims *jwtClaims) GetUserID() models.UserID {
+func (claims *JwtClaims) GetUserID() models.UserID {
 	return claims.UserID
 }
 
 func NewJWTString(userID models.UserID, key string) (string, error) {
-	claims := jwtClaims{
+	claims := JwtClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
@@ -36,14 +36,14 @@ func NewJWTString(userID models.UserID, key string) (string, error) {
 	return tokenString, nil
 }
 
-func ParseJWT(tokenString, key string) (*jwtClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &jwtClaims{}, func(token *jwt.Token) (interface{}, error) {
+func ParseJWT(tokenString, key string) (*JwtClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &JwtClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(*jwtClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*JwtClaims); ok && token.Valid {
 		return claims, nil
 	}
 	return nil, ErrInvalidJWT
