@@ -45,7 +45,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 	}
 
 	uid, err := h.regService.CreateUser(c.Context(), &user)
-	if errors.Is(err, storage.ErrConflict) {
+	if errors.Is(err, storage.ErrLoginConflict) {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	if err != nil {
