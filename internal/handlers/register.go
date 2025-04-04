@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
+
 type regServicer interface {
 	CreateUser(context.Context, *models.User) (models.UserID, error)
 }

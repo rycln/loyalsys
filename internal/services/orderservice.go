@@ -15,6 +15,8 @@ var (
 	ErrOrderConflict = errors.New("order already registered by other user")
 )
 
+//go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
+
 type orderStorager interface {
 	AddOrder(context.Context, *models.Order) error
 	GetOrderByNum(context.Context, string) (*models.OrderDB, error)
