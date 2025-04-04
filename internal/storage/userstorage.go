@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrConflict = errors.New("login already registered")
-	ErrNoUser   = errors.New("user does not exist")
+	ErrLoginConflict = errors.New("login already registered")
+	ErrNoUser        = errors.New("user does not exist")
 )
 
 type UserStorage struct {
@@ -26,16 +26,16 @@ func NewUserStorage(db *sql.DB) *UserStorage {
 
 func (s *UserStorage) AddUser(ctx context.Context, user *models.UserDB) (models.UserID, error) {
 	row := s.db.QueryRowContext(ctx, sqlAddUser, user.Login, user.PasswordHash)
-	var uid int64
+	var uid models.UserID
 	err := row.Scan(&uid)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return 0, ErrConflict
+			return 0, ErrLoginConflict
 		}
 		return 0, err
 	}
-	return models.UserID(uid), nil
+	return uid, nil
 }
 
 func (s *UserStorage) GetUserByLogin(ctx context.Context, login string) (*models.UserDB, error) {

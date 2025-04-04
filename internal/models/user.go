@@ -8,7 +8,7 @@ type User struct {
 }
 
 type UserDB struct {
-	ID           int64
+	ID           UserID
 	Login        string
 	PasswordHash string
 }

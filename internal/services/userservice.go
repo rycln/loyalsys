@@ -7,6 +7,8 @@ import (
 	"github.com/rycln/loyalsys/internal/models"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
+
 type userStorager interface {
 	AddUser(context.Context, *models.UserDB) (models.UserID, error)
 	GetUserByLogin(context.Context, string) (*models.UserDB, error)

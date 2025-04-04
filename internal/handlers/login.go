@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
+
 type loginServicer interface {
 	UserAuth(context.Context, *models.User) (models.UserID, error)
 }
@@ -33,10 +35,6 @@ func NewLoginHandler(loginService loginServicer, cfg *config.Cfg) func(*fiber.Ct
 }
 
 func (h *LoginHandler) handle(c *fiber.Ctx) error {
-	if !c.Is("json") {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-
 	var user models.User
 	err := json.Unmarshal(c.Body(), &user)
 	if err != nil {

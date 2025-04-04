@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
+
 type regServicer interface {
 	CreateUser(context.Context, *models.User) (models.UserID, error)
 }
@@ -33,10 +35,6 @@ func NewRegisterHandler(regService regServicer, cfg *config.Cfg) func(*fiber.Ctx
 }
 
 func (h *RegisterHandler) handle(c *fiber.Ctx) error {
-	if !c.Is("json") {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-
 	var user models.User
 	err := json.Unmarshal(c.Body(), &user)
 	if err != nil {
@@ -45,7 +43,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 	}
 
 	uid, err := h.regService.CreateUser(c.Context(), &user)
-	if errors.Is(err, storage.ErrConflict) {
+	if errors.Is(err, storage.ErrLoginConflict) {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	if err != nil {
