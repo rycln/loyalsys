@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -14,16 +13,13 @@ import (
 
 const validLuhnString = "4512812345678909"
 
-var errTest = errors.New("test error")
-
 func TestOrderService_SaveOrder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mStrg := mocks.NewMockorderStorager(ctrl)
+
 	t.Run("valid test", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockorderStorager(ctrl)
-
-		testUserID := models.UserID(1)
 		testOrder := &models.Order{
 			Number: validLuhnString,
 			UserID: testUserID,
@@ -37,12 +33,6 @@ func TestOrderService_SaveOrder(t *testing.T) {
 	})
 
 	t.Run("luhn validation error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockorderStorager(ctrl)
-
-		testUserID := models.UserID(1)
 		testOrder := &models.Order{
 			Number: "12345",
 			UserID: testUserID,
@@ -54,12 +44,6 @@ func TestOrderService_SaveOrder(t *testing.T) {
 	})
 
 	t.Run("AddOrder error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockorderStorager(ctrl)
-
-		testUserID := models.UserID(1)
 		testOrder := &models.Order{
 			Number: validLuhnString,
 			UserID: testUserID,
@@ -73,12 +57,6 @@ func TestOrderService_SaveOrder(t *testing.T) {
 	})
 
 	t.Run("GetOrderByNum error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockorderStorager(ctrl)
-
-		testUserID := models.UserID(1)
 		testOrder := &models.Order{
 			Number: validLuhnString,
 			UserID: testUserID,
@@ -91,12 +69,6 @@ func TestOrderService_SaveOrder(t *testing.T) {
 	})
 
 	t.Run("order exists error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockorderStorager(ctrl)
-
-		testUserID := models.UserID(1)
 		testOrder := &models.Order{
 			Number: validLuhnString,
 			UserID: testUserID,
@@ -112,19 +84,12 @@ func TestOrderService_SaveOrder(t *testing.T) {
 	})
 
 	t.Run("order conflict error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockorderStorager(ctrl)
-
-		testUserID := models.UserID(1)
 		testOrder := &models.Order{
 			Number: validLuhnString,
 			UserID: testUserID,
 		}
-		testOtherID := models.UserID(2)
 		testOrderDB := &models.OrderDB{
-			UserID: testOtherID,
+			UserID: testOtherUserID,
 		}
 		mStrg.EXPECT().GetOrderByNum(gomock.Any(), testOrder.Number).Return(testOrderDB, nil)
 
