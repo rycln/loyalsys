@@ -13,18 +13,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var tooLargePassword = string(make([]byte, 100))
+
 func TestUserService_CreateUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mStrg := mocks.NewMockuserStorager(ctrl)
+
 	t.Run("valid test", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockuserStorager(ctrl)
-
 		testUser := &models.User{
 			Login:    "test",
 			Password: "secret",
 		}
-		testUserID := models.UserID(1)
+
 		mStrg.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(testUserID, nil)
 
 		s := NewUserService(mStrg)
@@ -34,16 +36,12 @@ func TestUserService_CreateUser(t *testing.T) {
 	})
 
 	t.Run("AddUser error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockuserStorager(ctrl)
-
 		testUser := &models.User{
 			Login:    "test",
 			Password: "secret",
 		}
-		mStrg.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(models.UserID(0), errors.New("test error"))
+
+		mStrg.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(models.UserID(0), errTest)
 
 		s := NewUserService(mStrg)
 		_, err := s.CreateUser(context.Background(), testUser)
@@ -51,14 +49,9 @@ func TestUserService_CreateUser(t *testing.T) {
 	})
 
 	t.Run("password hash failed", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockuserStorager(ctrl)
-
 		testUser := &models.User{
 			Login:    "test",
-			Password: string(make([]byte, 100)),
+			Password: tooLargePassword,
 		}
 
 		s := NewUserService(mStrg)
@@ -68,19 +61,19 @@ func TestUserService_CreateUser(t *testing.T) {
 }
 
 func TestUserService_UserAuth(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mStrg := mocks.NewMockuserStorager(ctrl)
+
 	t.Run("valid test", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockuserStorager(ctrl)
-
 		testUser := &models.User{
 			Login:    "test",
 			Password: "secret",
 		}
+
 		testPasswordHash, err := auth.HashPassword(testUser.Password)
 		require.NoError(t, err)
-		testUserID := models.UserID(1)
 		testUserDB := &models.UserDB{
 			ID:           testUserID,
 			PasswordHash: testPasswordHash,
@@ -94,15 +87,11 @@ func TestUserService_UserAuth(t *testing.T) {
 	})
 
 	t.Run("GetUserByLogin error", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockuserStorager(ctrl)
-
 		testUser := &models.User{
 			Login:    "test",
 			Password: "secret",
 		}
+
 		mStrg.EXPECT().GetUserByLogin(context.Background(), testUser.Login).Return(nil, errors.New("test err"))
 
 		s := NewUserService(mStrg)
@@ -111,16 +100,10 @@ func TestUserService_UserAuth(t *testing.T) {
 	})
 
 	t.Run("password hash is not the same", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mStrg := mocks.NewMockuserStorager(ctrl)
-
 		testUser := &models.User{
 			Login:    "test",
 			Password: "secret",
 		}
-		testUserID := models.UserID(1)
 		testUserDB := &models.UserDB{
 			ID:           testUserID,
 			PasswordHash: "wrong hash",
