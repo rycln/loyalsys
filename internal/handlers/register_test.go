@@ -96,4 +96,22 @@ func TestRegisterHandler_handle(t *testing.T) {
 
 		assert.Equal(t, fiber.StatusInternalServerError, res.StatusCode)
 	})
+
+	t.Run("invalid user", func(t *testing.T) {
+		testUser := &models.User{
+			Login:    "",
+			Password: testUserPassword,
+		}
+
+		body, err := json.Marshal(testUser)
+		require.NoError(t, err)
+		bodyReader := bytes.NewReader(body)
+		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
+
+		res, err := app.Test(request, -1)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+	})
 }

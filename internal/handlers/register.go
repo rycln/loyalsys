@@ -41,6 +41,11 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
+	err = user.Validate()
+	if err != nil {
+		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
 
 	uid, err := h.regService.CreateUser(c.Context(), &user)
 	if errors.Is(err, storage.ErrLoginConflict) {
