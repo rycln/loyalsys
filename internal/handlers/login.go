@@ -41,6 +41,11 @@ func (h *LoginHandler) handle(c *fiber.Ctx) error {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
+	err = user.Validate()
+	if err != nil {
+		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
 
 	uid, err := h.loginService.UserAuth(c.Context(), &user)
 	if errors.Is(err, storage.ErrNoUser) || errors.Is(err, auth.ErrWrongPassword) {
