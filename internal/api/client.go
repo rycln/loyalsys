@@ -3,10 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/gofiber/fiber"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
 	"go.uber.org/zap"
@@ -37,12 +37,24 @@ func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string)
 	}
 
 	if res.StatusCode() == http.StatusOK {
-
+		var order models.OrderAccrual
+		err = json.Unmarshal(res.Body(), &order)
+		if err != nil {
+			logger.Log.Debug("client error", zap.Error(err))
+			return nil, err
+		}
+		return &order, nil
 	}
-	var order models.OrderAccrual
-	err = json.Unmarshal(res.Body(), &order)
-	if err != nil {
-		logger.Log.Debug("client error", zap.Error(err))
-		return c.SendStatus(fiber.StatusBadRequest)
+	if res.StatusCode() == http.StatusNoContent {
+		return nil, newErrorNoContent()
 	}
+	if res.StatusCode() == http.StatusTooManyRequests {
+		dur, err := time.ParseDuration(res.Header().Get("Retry-After") + "s")
+		if err != nil {
+			logger.Log.Debug("client error", zap.Error(err))
+			return nil, err
+		}
+		return nil, newErrorTooManyRequests(dur)
+	}
+	return nil, fmt.Errorf("unexpected client status code: %s", res.Status())
 }
