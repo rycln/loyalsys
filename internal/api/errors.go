@@ -18,6 +18,10 @@ func (err *errorTooManyRequests) IsTooManyRequests() bool {
 	return true
 }
 
+func (err *errorTooManyRequests) GetRetryAfterDuration() time.Duration {
+	return err.duration
+}
+
 func newErrorTooManyRequests(dur time.Duration) error {
 	return &errorTooManyRequests{
 		message:  "too many requests. Retry after:",
