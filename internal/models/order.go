@@ -13,3 +13,9 @@ type OrderDB struct {
 	Accrual   int
 	CreatedAt string
 }
+
+type OrderAccrual struct {
+	Number  string `json:"order"`
+	Status  string `json:"status"`
+	Accrual int    `json:"accrual"`
+}
