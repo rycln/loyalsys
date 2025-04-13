@@ -62,5 +62,5 @@ func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string)
 		}
 		return nil, newErrorTooManyRequests(dur, ErrTooManyRequests)
 	}
-	return nil, fmt.Errorf("unexpected client status code: %s", res.Status())
+	return nil, fmt.Errorf("the client received an unexpected status code: %s", res.Status())
 }
