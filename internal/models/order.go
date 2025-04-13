@@ -6,12 +6,12 @@ type Order struct {
 }
 
 type OrderDB struct {
-	ID        int64
-	Number    string
-	UserID    UserID
-	Status    string
-	Accrual   int
-	CreatedAt string
+	ID        int64  `json:"-"`
+	Number    string `json:"number"`
+	UserID    UserID `json:"-"`
+	Status    string `json:"status"`
+	Accrual   int    `json:"accrual,omitempty"`
+	CreatedAt string `json:"uploaded_at"`
 }
 
 type OrderAccrual struct {
