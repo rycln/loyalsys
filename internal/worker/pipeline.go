@@ -20,8 +20,11 @@ func (worker *OrderSyncWorker) GetUpdatedOrderByNum(ctx context.Context, inputNu
 
 		for num := range inputNumCh {
 			timeoutCtx, cancel := context.WithTimeout(ctx, worker.timeout)
+			defer cancel()
 			order, err := worker.api.GetOrderFromAccrual(timeoutCtx, num)
-			cancel()
+			if err != nil {
+				return
+			}
 
 			orderDB := &models.OrderDB{
 				Number:  order.Number,
