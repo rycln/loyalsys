@@ -6,12 +6,12 @@ import (
 )
 
 type errorTooManyRequests struct {
-	message  string
+	err      error
 	duration time.Duration
 }
 
 func (err *errorTooManyRequests) Error() string {
-	return fmt.Sprintf("%v %v", err.message, err.duration.String())
+	return fmt.Sprintf("%v Retry after: %v", err.err, err.duration.String())
 }
 
 func (err *errorTooManyRequests) IsTooManyRequests() bool {
@@ -22,27 +22,27 @@ func (err *errorTooManyRequests) GetRetryAfterDuration() time.Duration {
 	return err.duration
 }
 
-func newErrorTooManyRequests(dur time.Duration) error {
+func newErrorTooManyRequests(dur time.Duration, err error) error {
 	return &errorTooManyRequests{
-		message:  "too many requests. Retry after:",
+		err:      err,
 		duration: dur,
 	}
 }
 
 type errorNoContent struct {
-	message string
+	err error
 }
 
 func (err *errorNoContent) Error() string {
-	return err.message
+	return err.err.Error()
 }
 
 func (err *errorNoContent) IsNoContent() bool {
 	return true
 }
 
-func newErrorNoContent() error {
+func newErrorNoContent(err error) error {
 	return &errorNoContent{
-		message: "order not registered",
+		err: err,
 	}
 }
