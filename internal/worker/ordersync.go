@@ -80,6 +80,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(cancelCtx context.Context) {
 	defer cancel()
 	err = worker.storage.UpdateOrdersBatch(ctx, updatedOrders)
 	if err != nil {
+		return
 		//логгирование
 	}
 }
