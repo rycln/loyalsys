@@ -63,6 +63,9 @@ func (s *OrderStorage) GetOrdersByUserID(ctx context.Context, uid models.UserID)
 	if err != nil {
 		return nil, err
 	}
+	if orders == nil {
+		return nil, ErrNoOrder
+	}
 	return orders, nil
 }
 

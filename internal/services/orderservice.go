@@ -20,6 +20,7 @@ var (
 type orderStorager interface {
 	AddOrder(context.Context, *models.Order) error
 	GetOrderByNum(context.Context, string) (*models.OrderDB, error)
+	GetOrdersByUserID(context.Context, models.UserID) ([]*models.OrderDB, error)
 }
 
 type OrderService struct {
@@ -50,4 +51,12 @@ func (s *OrderService) SaveOrder(ctx context.Context, order *models.Order) error
 		return ErrOrderExists
 	}
 	return ErrOrderConflict
+}
+
+func (s *OrderService) GetUserOrders(ctx context.Context, uid models.UserID) ([]*models.OrderDB, error) {
+	orders, err := s.strg.GetOrdersByUserID(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
 }
