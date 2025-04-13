@@ -87,17 +87,17 @@ func ordersFanIn(ctx context.Context, channels []chan updateOrderResult) chan up
 	return resultCh
 }
 
-func orderNumbersGenerator(ctx context.Context, orders []models.OrderDB) chan string {
+func orderNumbersGenerator(ctx context.Context, nums []string) chan string {
 	inputNumCh := make(chan string)
 
 	go func() {
 		defer close(inputNumCh)
 
-		for _, order := range orders {
+		for _, num := range nums {
 			select {
 			case <-ctx.Done():
 				return
-			case inputNumCh <- order.Number:
+			case inputNumCh <- num:
 			}
 		}
 	}()

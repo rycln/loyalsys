@@ -12,7 +12,7 @@ type syncAPI interface {
 }
 
 type syncStorager interface {
-	GetInconclusiveOrders(context.Context) ([]models.OrderDB, error)
+	GetInconclusiveOrders(context.Context) ([]string, error)
 	UpdateOrdersBatch(context.Context, []*models.OrderDB) error
 }
 
@@ -49,17 +49,17 @@ func (worker *OrderSyncWorker) Run(cancelCtx context.Context, period time.Durati
 func (worker *OrderSyncWorker) updateOrdersBatch(cancelCtx context.Context) {
 	ctx, cancel := context.WithTimeout(cancelCtx, worker.timeout)
 	defer cancel()
-	ordersBatch, err := worker.storage.GetInconclusiveOrders(ctx)
+	orderNums, err := worker.storage.GetInconclusiveOrders(ctx)
 	if err != nil {
 		return
 	}
-	if len(ordersBatch) == 0 {
+	if len(orderNums) == 0 {
 		return
 	}
 
 	var updatedOrders []*models.OrderDB
 
-	numsChan := orderNumbersGenerator(cancelCtx, ordersBatch)
+	numsChan := orderNumbersGenerator(cancelCtx, orderNums)
 	resultChans := worker.ordersFanOut(cancelCtx, numsChan)
 	resultCh := ordersFanIn(cancelCtx, resultChans)
 
