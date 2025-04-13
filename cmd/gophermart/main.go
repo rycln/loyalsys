@@ -1,18 +1,23 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/contrib/fiberzap/v2"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
+	"github.com/rycln/loyalsys/internal/api"
 	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/handlers"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/middleware"
 	"github.com/rycln/loyalsys/internal/services"
 	"github.com/rycln/loyalsys/internal/storage"
+	"github.com/rycln/loyalsys/internal/worker"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -33,12 +38,19 @@ func main() {
 	userstrg := storage.NewUserStorage(db)
 	orderstrg := storage.NewOrderStorage(db)
 
+	restyClient := resty.New()
+	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
+
+	orderUpdater := worker.NewOrderSyncWorker(client, orderstrg, 10, cfg.Timeout)
+	orderUpdater.Run(context.Background(), time.Duration(10))
+
 	userservice := services.NewUserService(userstrg)
 	orderservice := services.NewOrderService(orderstrg)
 
 	registerHandler := handlers.NewRegisterHandler(userservice, cfg)
 	loginHandler := handlers.NewLoginHandler(userservice, cfg)
 	postOrderHandler := handlers.NewPostOrderHandler(orderservice, cfg)
+	getOrderHandler := handlers.NewGetOrderHandler(orderservice, cfg)
 
 	app := fiber.New()
 	app.Use(fiberzap.New(fiberzap.Config{
@@ -52,6 +64,7 @@ func main() {
 		SigningKey: jwtware.SigningKey{Key: []byte(cfg.Key)},
 	}))
 	app.Post("/api/user/orders", middleware.ContentTypeChecker("text/plain"), timeout.NewWithContext(postOrderHandler, cfg.Timeout))
+	app.Get("/api/user/orders", timeout.NewWithContext(getOrderHandler, cfg.Timeout))
 
 	err = app.Listen(cfg.RunAddr)
 	if err != nil {
