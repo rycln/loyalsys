@@ -42,7 +42,7 @@ func main() {
 	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
 
 	orderUpdater := worker.NewOrderSyncWorker(client, orderstrg, 10, cfg.Timeout)
-	orderUpdater.Run(context.Background(), time.Duration(10)*time.Second)
+	go orderUpdater.Run(context.Background(), time.Duration(10)*time.Second)
 
 	userservice := services.NewUserService(userstrg)
 	orderservice := services.NewOrderService(orderstrg)
