@@ -5,11 +5,13 @@ const (
 
 	sqlGetUserByLogin = "SELECT id, login, password_hash FROM users WHERE login = $1"
 
-	sqlGetOrderByNum = "SELECT id, number, user_id, status, accrual, created_at FROM orders WHERE number = $1"
+	sqlGetOrderByNum = "SELECT number, user_id, status, accrual, created_at FROM orders WHERE number = $1"
 
 	sqlAddOrder = "INSERT INTO orders (number, user_id) VALUES ($1, $2)"
 
 	sqlGetInconclusiveOrderNums = "SELECT number FROM orders WHERE status NOT IN ('INVALID', 'PROCESSED')"
 
 	sqlUpdateOrdersBatch = "UPDATE orders SET status = $1, accrual = $2 WHERE number = $3"
+
+	sqlGetOrdersByUserID = "SELECT number, status, accrual, created_at FROM orders WHERE user_id = $1 ORDER BY created_at DESC"
 )

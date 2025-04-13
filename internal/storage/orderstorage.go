@@ -44,6 +44,28 @@ func (s *OrderStorage) GetOrderByNum(ctx context.Context, number string) (*model
 	return &orderDB, nil
 }
 
+func (s *OrderStorage) GetOrdersByUserID(ctx context.Context, uid models.UserID) ([]*models.OrderDB, error) {
+	rows, err := s.db.QueryContext(ctx, sqlGetOrdersByUserID, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var orders []*models.OrderDB
+	for rows.Next() {
+		var order models.OrderDB
+		err = rows.Scan(&order.Number, &order.Status, &order.Accrual, &order.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, &order)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
+}
+
 func (s *OrderStorage) GetInconclusiveOrderNums(ctx context.Context) ([]string, error) {
 	rows, err := s.db.QueryContext(ctx, sqlGetInconclusiveOrderNums)
 	if err != nil {
