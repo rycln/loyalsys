@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rycln/loyalsys/internal/auth"
-	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/rycln/loyalsys/internal/storage"
@@ -23,13 +22,11 @@ type getOrderServicer interface {
 
 type GetOrderHandler struct {
 	getOrderService getOrderServicer
-	cfg             *config.Cfg
 }
 
-func NewGetOrderHandler(getOrderService getOrderServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
+func NewGetOrderHandler(getOrderService getOrderServicer) func(*fiber.Ctx) error {
 	h := &GetOrderHandler{
 		getOrderService: getOrderService,
-		cfg:             cfg,
 	}
 	return h.handle
 }

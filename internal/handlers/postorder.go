@@ -7,7 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rycln/loyalsys/internal/auth"
-	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/rycln/loyalsys/internal/services"
@@ -22,13 +21,11 @@ type postOrderServicer interface {
 
 type PostOrderHandler struct {
 	postOrderService postOrderServicer
-	cfg              *config.Cfg
 }
 
-func NewPostOrderHandler(postOrderService postOrderServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
+func NewPostOrderHandler(postOrderService postOrderServicer) func(*fiber.Ctx) error {
 	h := &PostOrderHandler{
 		postOrderService: postOrderService,
-		cfg:              cfg,
 	}
 	return h.handle
 }
