@@ -12,7 +12,7 @@ const (
 	defaultServerAddr  = ":8080"
 	defultTimeout      = time.Duration(2) * time.Minute
 	defaultKeyLength   = 10
-	defaultLoggerLevel = "info"
+	defaultLoggerLevel = "debug"
 )
 
 type Cfg struct {

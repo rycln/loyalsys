@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
+	"go.uber.org/zap"
 )
 
 type syncAPI interface {
@@ -51,6 +53,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(cancelCtx context.Context) {
 	defer cancel()
 	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctx)
 	if err != nil {
+		logger.Log.Debug("worker error", zap.Error(err))
 		return
 	}
 	if len(orderNums) == 0 {
@@ -70,6 +73,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(cancelCtx context.Context) {
 		case <-resultCh:
 			if result.err != nil {
 				//добавить обработку ошибки retry-after и логгирование
+				logger.Log.Debug("worker error", zap.Error(err))
 				continue
 			}
 			updatedOrders = append(updatedOrders, result.order)
@@ -80,7 +84,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(cancelCtx context.Context) {
 	defer cancel()
 	err = worker.storage.UpdateOrdersBatch(ctx, updatedOrders)
 	if err != nil {
+		logger.Log.Debug("worker error", zap.Error(err))
 		return
-		//логгирование
 	}
 }
