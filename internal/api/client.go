@@ -41,6 +41,9 @@ func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string)
 		return nil, err
 	}
 
+	//debug
+	logger.Log.Debug("client status code", zap.String("status code", res.Status()))
+
 	if res.StatusCode() == http.StatusOK {
 		var order models.OrderAccrual
 		err = json.Unmarshal(res.Body(), &order)
