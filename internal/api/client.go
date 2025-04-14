@@ -35,14 +35,14 @@ func NewOrderUpdateClient(client *resty.Client, baseURL string, timeout time.Dur
 func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string) (*models.OrderAccrual, error) {
 	res, err := c.client.R().SetContext(ctx).SetPathParams(map[string]string{
 		"orderNum": num,
-	}).Get(fmt.Sprintf("%s/{orderNum}", c.baseURL))
+	}).Get(c.baseURL + "/api/orders/{orderNum}")
 	if err != nil {
 		logger.Log.Debug("client error", zap.Error(err))
 		return nil, err
 	}
 
 	//debug
-	logger.Log.Debug("client status code", zap.String("status code", res.Status()))
+	logger.Log.Debug("client response", zap.String("status code", res.Status()))
 
 	if res.StatusCode() == http.StatusOK {
 		var order models.OrderAccrual
