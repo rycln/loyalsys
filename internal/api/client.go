@@ -34,9 +34,8 @@ func NewOrderUpdateClient(client *resty.Client, baseURL string, timeout time.Dur
 
 func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string) (*models.OrderAccrual, error) {
 	res, err := c.client.R().SetContext(ctx).SetPathParams(map[string]string{
-		"baseURL":  c.baseURL,
 		"orderNum": num,
-	}).Get("{baseURL}/{orderNum}")
+	}).Get(fmt.Sprintf("%s/{orderNum}", c.baseURL))
 	if err != nil {
 		logger.Log.Debug("client error", zap.Error(err))
 		return nil, err
