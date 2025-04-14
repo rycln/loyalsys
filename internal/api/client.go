@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,11 +12,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/go-resty/resty/v2"
-)
-
-var (
-	ErrTooManyRequests = errors.New("too many requests")
-	ErrNoContent       = errors.New("no content")
 )
 
 type OrderUpdateClient struct {
@@ -41,9 +35,6 @@ func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string)
 		return nil, err
 	}
 
-	//debug
-	logger.Log.Debug("client response", zap.String("status code", res.Status()))
-
 	if res.StatusCode() == http.StatusOK {
 		var order models.OrderAccrual
 		err = json.Unmarshal(res.Body(), &order)
@@ -54,7 +45,7 @@ func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string)
 		return &order, nil
 	}
 	if res.StatusCode() == http.StatusNoContent {
-		return nil, newErrorNoContent(ErrNoContent)
+		return nil, ErrNoContent
 	}
 	if res.StatusCode() == http.StatusTooManyRequests {
 		dur, err := time.ParseDuration(res.Header().Get("Retry-After") + "s")
@@ -62,7 +53,7 @@ func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string)
 			logger.Log.Debug("client error", zap.Error(err))
 			return nil, err
 		}
-		return nil, newErrorTooManyRequests(dur, ErrTooManyRequests)
+		return nil, newErrRetryAfter(dur, ErrTooManyRequests)
 	}
 	return nil, fmt.Errorf("the client received an unexpected status code: %s", res.Status())
 }

@@ -18,6 +18,11 @@ type syncStorager interface {
 	UpdateOrdersBatch(context.Context, []*models.OrderDB) error
 }
 
+type errRetryAfter interface {
+	error
+	GetRetryAfterDuration() time.Duration
+}
+
 type OrderSyncWorker struct {
 	api     syncAPI
 	storage syncStorager
@@ -34,57 +39,67 @@ func NewOrderSyncWorker(api syncAPI, storage syncStorager, pool int, timeout tim
 	}
 }
 
-func (worker *OrderSyncWorker) Run(cancelCtx context.Context, period time.Duration) {
+func (worker *OrderSyncWorker) Run(ctx context.Context, period time.Duration) {
 	ticker := time.NewTicker(period)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-cancelCtx.Done():
+		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			worker.updateOrdersBatch(cancelCtx)
+			err := worker.updateOrdersBatch(ctx)
+			if e, ok := err.(errRetryAfter); ok {
+				dur := e.GetRetryAfterDuration()
+				ticker.Reset(dur)
+				logger.Log.Info("worker retry after", zap.Duration("duration, sec:", dur))
+				continue
+			}
+			if err != nil {
+				logger.Log.Debug("worker error", zap.Error(err))
+			}
 		}
 	}
 }
 
-func (worker *OrderSyncWorker) updateOrdersBatch(cancelCtx context.Context) {
-	ctx, cancel := context.WithTimeout(cancelCtx, worker.timeout)
+func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, worker.timeout)
 	defer cancel()
 	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctx)
 	if err != nil {
-		logger.Log.Debug("worker error", zap.Error(err))
-		return
+		return err
 	}
 	if len(orderNums) == 0 {
-		return
+		return nil
 	}
+
+	numsChan := orderNumbersGenerator(ctx, orderNums)
+	resultChans := worker.ordersFanOut(ctx, numsChan)
+	resultCh := ordersFanIn(ctx, resultChans)
 
 	var updatedOrders []*models.OrderDB
 
-	numsChan := orderNumbersGenerator(cancelCtx, orderNums)
-	resultChans := worker.ordersFanOut(cancelCtx, numsChan)
-	resultCh := ordersFanIn(cancelCtx, resultChans)
-
 	for result := range resultCh {
 		select {
-		case <-cancelCtx.Done():
-			return
+		case <-ctx.Done():
+			return nil
 		case <-resultCh:
+			if err, ok := result.err.(errRetryAfter); ok {
+				return err
+			}
 			if result.err != nil {
-				//добавить обработку ошибки retry-after и логгирование
-				logger.Log.Debug("worker error", zap.Error(err))
+				logger.Log.Debug("pipeline error", zap.Error(err))
 				continue
 			}
 			updatedOrders = append(updatedOrders, result.order)
 		}
 	}
 
-	ctx, cancel = context.WithTimeout(cancelCtx, worker.timeout)
+	ctx, cancel = context.WithTimeout(ctx, worker.timeout)
 	defer cancel()
 	err = worker.storage.UpdateOrdersBatch(ctx, updatedOrders)
 	if err != nil {
-		logger.Log.Debug("worker error", zap.Error(err))
-		return
+		return err
 	}
+	return nil
 }
