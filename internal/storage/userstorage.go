@@ -38,7 +38,7 @@ func (s *UserStorage) GetUserByLogin(ctx context.Context, login string) (*models
 	var userDB models.UserDB
 	err := row.Scan(&userDB.ID, &userDB.Login, &userDB.PasswordHash)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrNoUser
+		return nil, newErrNoUser(ErrNoUser)
 	}
 	if err != nil {
 		return nil, err

@@ -3,14 +3,12 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +16,11 @@ import (
 
 type regServicer interface {
 	CreateUser(context.Context, *models.User) (models.UserID, error)
+}
+
+type errLoginConflict interface {
+	error
+	IsErrLoginConflict() bool
 }
 
 type RegisterHandler struct {
@@ -47,7 +50,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 	}
 
 	uid, err := h.regService.CreateUser(c.Context(), &user)
-	if errors.Is(err, storage.ErrLoginConflict) {
+	if _, ok := err.(errLoginConflict); ok {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	if err != nil {

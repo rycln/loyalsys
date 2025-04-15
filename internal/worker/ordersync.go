@@ -63,6 +63,7 @@ func (worker *OrderSyncWorker) Run(ctx context.Context) {
 func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
 	ctxDB, cancelDB := context.WithTimeout(ctx, worker.cfg.timeout)
 	defer cancelDB()
+
 	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctxDB)
 	if err != nil {
 		return err
@@ -73,6 +74,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
 
 	ctxPipeline, cancelPipeline := context.WithCancel(ctx)
 	defer cancelPipeline()
+
 	numsChan := orderNumbersGenerator(ctxPipeline, orderNums)
 	resultChans := worker.ordersFanOut(ctxPipeline, numsChan)
 	resultCh := ordersFanIn(ctxPipeline, resultChans)
@@ -97,6 +99,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
 
 	ctxDB, cancelDB = context.WithTimeout(ctx, worker.cfg.timeout)
 	defer cancelDB()
+
 	err = worker.storage.UpdateOrdersBatch(ctxDB, updatedOrders)
 	if err != nil {
 		return err

@@ -10,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/rycln/loyalsys/internal/handlers/mocks"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,7 +63,7 @@ func TestRegisterHandler_handle(t *testing.T) {
 			Login:    testUserLogin,
 			Password: testUserPassword,
 		}
-		mService.EXPECT().CreateUser(gomock.Any(), testUser).Return(models.UserID(0), storage.ErrLoginConflict)
+		mService.EXPECT().CreateUser(gomock.Any(), testUser).Return(models.UserID(0), mocks.NewMockerrLoginConflict(ctrl))
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)

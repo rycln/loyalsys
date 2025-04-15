@@ -9,20 +9,46 @@ var (
 	ErrNoUser        = errors.New("user does not exist")
 )
 
-type loginConflict struct {
+type errLoginConflict struct {
 	err error
 }
 
-func (err *loginConflict) Error() string {
+func (err *errLoginConflict) Error() string {
 	return err.err.Error()
 }
 
-func (err *loginConflict) IsLoginConflict() bool {
+func (err *errLoginConflict) Unwrap() error {
+	return err.err
+}
+
+func (err *errLoginConflict) IsErrLoginConflict() bool {
 	return true
 }
 
 func newErrLoginConflict(err error) error {
-	return &loginConflict{
+	return &errLoginConflict{
+		err: err,
+	}
+}
+
+type errNoUser struct {
+	err error
+}
+
+func (err *errNoUser) Error() string {
+	return err.err.Error()
+}
+
+func (err *errNoUser) Unwrap() error {
+	return err.err
+}
+
+func (err *errNoUser) IsErrNoUser() bool {
+	return true
+}
+
+func newErrNoUser(err error) error {
+	return &errNoUser{
 		err: err,
 	}
 }

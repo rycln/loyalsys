@@ -20,6 +20,10 @@ func (err *errRetryAfter) Error() string {
 	return fmt.Sprintf("%v Retry after: %v", err.err, err.duration.String())
 }
 
+func (err *errRetryAfter) Unwrap() error {
+	return err.err
+}
+
 func (err *errRetryAfter) GetRetryAfterDuration() time.Duration {
 	return err.duration
 }
