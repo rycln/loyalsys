@@ -22,9 +22,16 @@ import (
 )
 
 func main() {
-	cfg := config.NewCfg()
+	cfg, err := config.NewConfigBuilder().
+		WithFlagParsing().
+		WithEnvParsing().
+		WithDefaultJWTKey().
+		Build()
+	if err != nil {
+		log.Fatalf("Can't initialize the configuration: %v", err)
+	}
 
-	err := logger.LogInit(cfg.LogLevel)
+	err = logger.LogInit(cfg.LogLevel)
 	if err != nil {
 		log.Fatalf("Can't initialize the logger: %v", err)
 	}
@@ -47,10 +54,10 @@ func main() {
 	userservice := services.NewUserService(userstrg)
 	orderservice := services.NewOrderService(orderstrg)
 
-	registerHandler := handlers.NewRegisterHandler(userservice, cfg)
-	loginHandler := handlers.NewLoginHandler(userservice, cfg)
-	postOrderHandler := handlers.NewPostOrderHandler(orderservice, cfg)
-	getOrderHandler := handlers.NewGetOrderHandler(orderservice, cfg)
+	registerHandler := handlers.NewRegisterHandler(userservice, cfg.Key)
+	loginHandler := handlers.NewLoginHandler(userservice, cfg.Key)
+	postOrderHandler := handlers.NewPostOrderHandler(orderservice)
+	getOrderHandler := handlers.NewGetOrderHandler(orderservice)
 
 	app := fiber.New()
 	app.Use(fiberzap.New(fiberzap.Config{

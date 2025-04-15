@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/models"
 )
 
@@ -17,9 +16,5 @@ const (
 )
 
 var (
-	testCfg = &config.Cfg{
-		Timeout: testTimeout,
-		Key:     testKey,
-	}
 	errTest = errors.New("test error")
 )

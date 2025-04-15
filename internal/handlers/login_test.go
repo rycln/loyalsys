@@ -22,7 +22,7 @@ func TestLoginHandler_handle(t *testing.T) {
 
 	mService := mocks.NewMockloginServicer(ctrl)
 
-	lohinHandler := NewLoginHandler(mService, testCfg)
+	lohinHandler := NewLoginHandler(mService, testKey)
 
 	app := fiber.New()
 	app.Post("/", lohinHandler)

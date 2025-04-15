@@ -8,7 +8,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/rycln/loyalsys/internal/auth"
-	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/rycln/loyalsys/internal/storage"
@@ -23,13 +22,13 @@ type regServicer interface {
 
 type RegisterHandler struct {
 	regService regServicer
-	cfg        *config.Cfg
+	jwtKey     string
 }
 
-func NewRegisterHandler(regService regServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
+func NewRegisterHandler(regService regServicer, jwtKey string) func(*fiber.Ctx) error {
 	h := &RegisterHandler{
 		regService: regService,
-		cfg:        cfg,
+		jwtKey:     jwtKey,
 	}
 	return h.handle
 }
@@ -56,7 +55,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	jwt, err := auth.NewJWTString(uid, h.cfg.Key)
+	jwt, err := auth.NewJWTString(uid, h.jwtKey)
 	if err != nil {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusInternalServerError)

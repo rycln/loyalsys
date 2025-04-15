@@ -21,7 +21,7 @@ func TestRegisterHandler_handle(t *testing.T) {
 
 	mService := mocks.NewMockregServicer(ctrl)
 
-	registerHandler := NewRegisterHandler(mService, testCfg)
+	registerHandler := NewRegisterHandler(mService, testKey)
 
 	app := fiber.New()
 	app.Post("/", registerHandler)

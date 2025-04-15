@@ -25,7 +25,7 @@ func TestPostOrderHandler_handle(t *testing.T) {
 
 	mService := mocks.NewMockpostOrderServicer(ctrl)
 
-	postOrderHandler := NewPostOrderHandler(mService, testCfg)
+	postOrderHandler := NewPostOrderHandler(mService)
 
 	app := fiber.New()
 	app.Use(jwtware.New(jwtware.Config{
