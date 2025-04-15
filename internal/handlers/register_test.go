@@ -63,7 +63,9 @@ func TestRegisterHandler_handle(t *testing.T) {
 			Login:    testUserLogin,
 			Password: testUserPassword,
 		}
-		mService.EXPECT().CreateUser(gomock.Any(), testUser).Return(models.UserID(0), mocks.NewMockerrLoginConflict(ctrl))
+		mErr := mocks.NewMockerrLoginConflict(ctrl)
+		mErr.EXPECT().IsErrLoginConflict().Return(true)
+		mService.EXPECT().CreateUser(gomock.Any(), testUser).Return(models.UserID(0), mErr)
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)

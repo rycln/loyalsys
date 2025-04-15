@@ -24,6 +24,10 @@ func (err *errRetryAfter) Unwrap() error {
 	return err.err
 }
 
+func (err *errRetryAfter) IsErrRetryAfter() bool {
+	return true
+}
+
 func (err *errRetryAfter) GetRetryAfterDuration() time.Duration {
 	return err.duration
 }

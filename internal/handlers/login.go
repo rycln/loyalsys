@@ -3,14 +3,12 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +16,16 @@ import (
 
 type loginServicer interface {
 	UserAuth(context.Context, *models.User) (models.UserID, error)
+}
+
+type errNoUser interface {
+	error
+	IsErrNoUser() bool
+}
+
+type errWrongPassword interface {
+	error
+	IsErrWrongPassword() bool
 }
 
 type LoginHandler struct {
@@ -47,7 +55,11 @@ func (h *LoginHandler) handle(c *fiber.Ctx) error {
 	}
 
 	uid, err := h.loginService.UserAuth(c.Context(), &user)
-	if errors.Is(err, storage.ErrNoUser) || errors.Is(err, auth.ErrWrongPassword) {
+	if e, ok := err.(errNoUser); ok && e.IsErrNoUser() {
+		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if e, ok := err.(errWrongPassword); ok && e.IsErrWrongPassword() {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}

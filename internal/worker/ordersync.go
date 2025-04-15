@@ -20,6 +20,7 @@ type syncStorager interface {
 
 type errRetryAfter interface {
 	error
+	IsErrRetryAfter() bool
 	GetRetryAfterDuration() time.Duration
 }
 
@@ -47,7 +48,7 @@ func (worker *OrderSyncWorker) Run(ctx context.Context) {
 			return
 		case <-ticker.C:
 			err := worker.updateOrdersBatch(ctx)
-			if e, ok := err.(errRetryAfter); ok {
+			if e, ok := err.(errRetryAfter); ok && e.IsErrRetryAfter() {
 				dur := e.GetRetryAfterDuration()
 				ticker.Reset(dur)
 				logger.Log.Info("worker retry after", zap.Duration("duration, sec:", dur))
@@ -86,7 +87,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-resultCh:
-			if err, ok := result.err.(errRetryAfter); ok {
+			if err, ok := result.err.(errRetryAfter); ok && err.IsErrRetryAfter() {
 				return err
 			}
 			if result.err != nil {

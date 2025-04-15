@@ -50,7 +50,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 	}
 
 	uid, err := h.regService.CreateUser(c.Context(), &user)
-	if _, ok := err.(errLoginConflict); ok {
+	if e, ok := err.(errLoginConflict); ok && e.IsErrLoginConflict() {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	if err != nil {

@@ -8,10 +8,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang/mock/gomock"
-	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/handlers/mocks"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,7 +63,10 @@ func TestLoginHandler_handle(t *testing.T) {
 			Login:    testUserLogin,
 			Password: testUserPassword,
 		}
-		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(models.UserID(0), storage.ErrNoUser)
+
+		mErr := mocks.NewMockerrNoUser(ctrl)
+		mErr.EXPECT().IsErrNoUser().Return(true)
+		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(models.UserID(0), mErr)
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)
@@ -84,7 +85,9 @@ func TestLoginHandler_handle(t *testing.T) {
 			Login:    testUserLogin,
 			Password: testUserPassword,
 		}
-		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(models.UserID(0), auth.ErrWrongPassword)
+		mErr := mocks.NewMockerrWrongPassword(ctrl)
+		mErr.EXPECT().IsErrWrongPassword().Return(true)
+		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(models.UserID(0), mErr)
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)

@@ -1,14 +1,11 @@
 package auth
 
 import (
-	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rycln/loyalsys/internal/models"
 )
-
-var ErrInvalidJWT = errors.New("invalid jwt")
 
 const tokenExp = time.Hour * 2
 
