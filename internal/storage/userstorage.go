@@ -11,11 +11,6 @@ import (
 	"github.com/rycln/loyalsys/internal/models"
 )
 
-var (
-	ErrLoginConflict = errors.New("login already registered")
-	ErrNoUser        = errors.New("user does not exist")
-)
-
 type UserStorage struct {
 	db *sql.DB
 }
@@ -31,7 +26,7 @@ func (s *UserStorage) AddUser(ctx context.Context, user *models.UserDB) (models.
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return 0, ErrLoginConflict
+			return 0, newErrLoginConflict(ErrLoginConflict)
 		}
 		return 0, err
 	}

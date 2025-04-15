@@ -12,6 +12,17 @@ type updateOrderResult struct {
 	err   error
 }
 
+func (worker *OrderSyncWorker) ordersFanOut(ctx context.Context, inputNumCh <-chan string) []chan updateOrderResult {
+	channels := make([]chan updateOrderResult, worker.cfg.fanOutPool)
+
+	for i := 0; i < worker.cfg.fanOutPool; i++ {
+		resultCh := worker.getUpdatedOrderByNum(ctx, inputNumCh)
+		channels[i] = resultCh
+	}
+
+	return channels
+}
+
 func (worker *OrderSyncWorker) getUpdatedOrderByNum(ctx context.Context, inputNumCh <-chan string) chan updateOrderResult {
 	resultCh := make(chan updateOrderResult)
 
@@ -46,17 +57,6 @@ func (worker *OrderSyncWorker) getUpdatedOrderByNum(ctx context.Context, inputNu
 	}()
 
 	return resultCh
-}
-
-func (worker *OrderSyncWorker) ordersFanOut(ctx context.Context, inputNumCh <-chan string) []chan updateOrderResult {
-	channels := make([]chan updateOrderResult, worker.cfg.fanOutPool)
-
-	for i := 0; i < worker.cfg.fanOutPool; i++ {
-		resultCh := worker.getUpdatedOrderByNum(ctx, inputNumCh)
-		channels[i] = resultCh
-	}
-
-	return channels
 }
 
 func ordersFanIn(ctx context.Context, channels []chan updateOrderResult) chan updateOrderResult {
