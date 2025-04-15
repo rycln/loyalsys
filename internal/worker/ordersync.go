@@ -26,21 +26,19 @@ type errRetryAfter interface {
 type OrderSyncWorker struct {
 	api     syncAPI
 	storage syncStorager
-	pool    int
-	timeout time.Duration
+	cfg     *SyncWorkerConfig
 }
 
-func NewOrderSyncWorker(api syncAPI, storage syncStorager, pool int, timeout time.Duration) *OrderSyncWorker {
+func NewOrderSyncWorker(api syncAPI, storage syncStorager, cfg *SyncWorkerConfig) *OrderSyncWorker {
 	return &OrderSyncWorker{
 		api:     api,
 		storage: storage,
-		pool:    pool,
-		timeout: timeout,
+		cfg:     cfg,
 	}
 }
 
-func (worker *OrderSyncWorker) Run(ctx context.Context, period time.Duration) {
-	ticker := time.NewTicker(period)
+func (worker *OrderSyncWorker) Run(ctx context.Context) {
+	ticker := time.NewTicker(worker.cfg.tickerPeriod)
 	defer ticker.Stop()
 
 	for {
@@ -63,9 +61,9 @@ func (worker *OrderSyncWorker) Run(ctx context.Context, period time.Duration) {
 }
 
 func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, worker.timeout)
-	defer cancel()
-	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctx)
+	ctxDB, cancelDB := context.WithTimeout(ctx, worker.cfg.timeout)
+	defer cancelDB()
+	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctxDB)
 	if err != nil {
 		return err
 	}
@@ -73,9 +71,11 @@ func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
 		return nil
 	}
 
-	numsChan := orderNumbersGenerator(ctx, orderNums)
-	resultChans := worker.ordersFanOut(ctx, numsChan)
-	resultCh := ordersFanIn(ctx, resultChans)
+	ctxPipeline, cancelPipeline := context.WithCancel(ctx)
+	defer cancelPipeline()
+	numsChan := orderNumbersGenerator(ctxPipeline, orderNums)
+	resultChans := worker.ordersFanOut(ctxPipeline, numsChan)
+	resultCh := ordersFanIn(ctxPipeline, resultChans)
 
 	var updatedOrders []*models.OrderDB
 
@@ -95,9 +95,9 @@ func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
 		}
 	}
 
-	ctx, cancel = context.WithTimeout(ctx, worker.timeout)
-	defer cancel()
-	err = worker.storage.UpdateOrdersBatch(ctx, updatedOrders)
+	ctxDB, cancelDB = context.WithTimeout(ctx, worker.cfg.timeout)
+	defer cancelDB()
+	err = worker.storage.UpdateOrdersBatch(ctxDB, updatedOrders)
 	if err != nil {
 		return err
 	}

@@ -12,24 +12,24 @@ type updateOrderResult struct {
 	err   error
 }
 
-func (worker *OrderSyncWorker) GetUpdatedOrderByNum(ctx context.Context, inputNumCh <-chan string) chan updateOrderResult {
+func (worker *OrderSyncWorker) getUpdatedOrderByNum(ctx context.Context, inputNumCh <-chan string) chan updateOrderResult {
 	resultCh := make(chan updateOrderResult)
 
 	go func() {
 		defer close(resultCh)
 
 		for num := range inputNumCh {
-			timeoutCtx, cancel := context.WithTimeout(ctx, worker.timeout)
-			defer cancel()
-			order, err := worker.api.GetOrderFromAccrual(timeoutCtx, num)
-			if err != nil {
-				return
-			}
+			var orderDB *models.OrderDB
 
-			orderDB := &models.OrderDB{
-				Number:  order.Number,
-				Status:  order.Status,
-				Accrual: order.Accrual,
+			ctx, cancel := context.WithTimeout(ctx, worker.cfg.timeout)
+			defer cancel()
+			orderAccrual, err := worker.api.GetOrderFromAccrual(ctx, num)
+			if err == nil {
+				orderDB = &models.OrderDB{
+					Number:  orderAccrual.Number,
+					Status:  orderAccrual.Status,
+					Accrual: orderAccrual.Accrual,
+				}
 			}
 
 			result := updateOrderResult{
@@ -49,10 +49,10 @@ func (worker *OrderSyncWorker) GetUpdatedOrderByNum(ctx context.Context, inputNu
 }
 
 func (worker *OrderSyncWorker) ordersFanOut(ctx context.Context, inputNumCh <-chan string) []chan updateOrderResult {
-	channels := make([]chan updateOrderResult, worker.pool)
+	channels := make([]chan updateOrderResult, worker.cfg.fanOutPool)
 
-	for i := 0; i < worker.pool; i++ {
-		resultCh := worker.GetUpdatedOrderByNum(ctx, inputNumCh)
+	for i := 0; i < worker.cfg.fanOutPool; i++ {
+		resultCh := worker.getUpdatedOrderByNum(ctx, inputNumCh)
 		channels[i] = resultCh
 	}
 

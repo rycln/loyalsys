@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/contrib/fiberzap/v2"
@@ -41,6 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Can't open database: %v", err)
 	}
+	defer db.Close()
 
 	userstrg := storage.NewUserStorage(db)
 	orderstrg := storage.NewOrderStorage(db)
@@ -48,8 +48,13 @@ func main() {
 	restyClient := resty.New()
 	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
 
-	orderUpdater := worker.NewOrderSyncWorker(client, orderstrg, 10, cfg.Timeout)
-	go orderUpdater.Run(context.Background(), time.Duration(4)*time.Second)
+	workerCfg := worker.NewSyncWorkerConfigBuilder().
+		WithTimeout(cfg.Timeout).
+		Build()
+	orderUpdater := worker.NewOrderSyncWorker(client, orderstrg, workerCfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go orderUpdater.Run(ctx)
 
 	userservice := services.NewUserService(userstrg)
 	orderservice := services.NewOrderService(orderstrg)
