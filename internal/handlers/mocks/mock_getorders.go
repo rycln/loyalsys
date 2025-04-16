@@ -49,3 +49,92 @@ func (mr *MockgetOrderServicerMockRecorder) GetUserOrders(arg0, arg1 interface{}
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserOrders", reflect.TypeOf((*MockgetOrderServicer)(nil).GetUserOrders), arg0, arg1)
 }
+
+// MockgetOrderJWT is a mock of getOrderJWT interface.
+type MockgetOrderJWT struct {
+	ctrl     *gomock.Controller
+	recorder *MockgetOrderJWTMockRecorder
+}
+
+// MockgetOrderJWTMockRecorder is the mock recorder for MockgetOrderJWT.
+type MockgetOrderJWTMockRecorder struct {
+	mock *MockgetOrderJWT
+}
+
+// NewMockgetOrderJWT creates a new mock instance.
+func NewMockgetOrderJWT(ctrl *gomock.Controller) *MockgetOrderJWT {
+	mock := &MockgetOrderJWT{ctrl: ctrl}
+	mock.recorder = &MockgetOrderJWTMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockgetOrderJWT) EXPECT() *MockgetOrderJWTMockRecorder {
+	return m.recorder
+}
+
+// ParseIDFromAuthHeader mocks base method.
+func (m *MockgetOrderJWT) ParseIDFromAuthHeader(arg0 string) (models.UserID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ParseIDFromAuthHeader", arg0)
+	ret0, _ := ret[0].(models.UserID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ParseIDFromAuthHeader indicates an expected call of ParseIDFromAuthHeader.
+func (mr *MockgetOrderJWTMockRecorder) ParseIDFromAuthHeader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseIDFromAuthHeader", reflect.TypeOf((*MockgetOrderJWT)(nil).ParseIDFromAuthHeader), arg0)
+}
+
+// MockerrNoOrder is a mock of errNoOrder interface.
+type MockerrNoOrder struct {
+	ctrl     *gomock.Controller
+	recorder *MockerrNoOrderMockRecorder
+}
+
+// MockerrNoOrderMockRecorder is the mock recorder for MockerrNoOrder.
+type MockerrNoOrderMockRecorder struct {
+	mock *MockerrNoOrder
+}
+
+// NewMockerrNoOrder creates a new mock instance.
+func NewMockerrNoOrder(ctrl *gomock.Controller) *MockerrNoOrder {
+	mock := &MockerrNoOrder{ctrl: ctrl}
+	mock.recorder = &MockerrNoOrderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockerrNoOrder) EXPECT() *MockerrNoOrderMockRecorder {
+	return m.recorder
+}
+
+// Error mocks base method.
+func (m *MockerrNoOrder) Error() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockerrNoOrderMockRecorder) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockerrNoOrder)(nil).Error))
+}
+
+// IsErrNoOrder mocks base method.
+func (m *MockerrNoOrder) IsErrNoOrder() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsErrNoOrder")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsErrNoOrder indicates an expected call of IsErrNoOrder.
+func (mr *MockerrNoOrderMockRecorder) IsErrNoOrder() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsErrNoOrder", reflect.TypeOf((*MockerrNoOrder)(nil).IsErrNoOrder))
+}

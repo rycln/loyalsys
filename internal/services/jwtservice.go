@@ -1,12 +1,15 @@
 package services
 
 import (
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rycln/loyalsys/internal/models"
 )
+
+var ErrNoUserID = errors.New("jwt does not contain user id")
 
 type JWTService struct {
 	key string
@@ -23,6 +26,13 @@ func NewJWTService(key string, exp time.Duration) *JWTService {
 type jwtClaims struct {
 	jwt.RegisteredClaims
 	UserID models.UserID `json:"id"`
+}
+
+func (c jwtClaims) Validate() error {
+	if c.UserID == 0 {
+		return ErrNoUserID
+	}
+	return nil
 }
 
 func (s *JWTService) NewJWTString(userID models.UserID) (string, error) {

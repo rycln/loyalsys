@@ -50,6 +50,44 @@ func (mr *MockloginServicerMockRecorder) UserAuth(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserAuth", reflect.TypeOf((*MockloginServicer)(nil).UserAuth), arg0, arg1)
 }
 
+// MockloginJWT is a mock of loginJWT interface.
+type MockloginJWT struct {
+	ctrl     *gomock.Controller
+	recorder *MockloginJWTMockRecorder
+}
+
+// MockloginJWTMockRecorder is the mock recorder for MockloginJWT.
+type MockloginJWTMockRecorder struct {
+	mock *MockloginJWT
+}
+
+// NewMockloginJWT creates a new mock instance.
+func NewMockloginJWT(ctrl *gomock.Controller) *MockloginJWT {
+	mock := &MockloginJWT{ctrl: ctrl}
+	mock.recorder = &MockloginJWTMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockloginJWT) EXPECT() *MockloginJWTMockRecorder {
+	return m.recorder
+}
+
+// NewJWTString mocks base method.
+func (m *MockloginJWT) NewJWTString(arg0 models.UserID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewJWTString", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewJWTString indicates an expected call of NewJWTString.
+func (mr *MockloginJWTMockRecorder) NewJWTString(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewJWTString", reflect.TypeOf((*MockloginJWT)(nil).NewJWTString), arg0)
+}
+
 // MockerrNoUser is a mock of errNoUser interface.
 type MockerrNoUser struct {
 	ctrl     *gomock.Controller

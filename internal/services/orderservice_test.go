@@ -7,7 +7,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/rycln/loyalsys/internal/services/mocks"
-	"github.com/rycln/loyalsys/internal/storage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,13 +17,15 @@ func TestOrderService_SaveOrder(t *testing.T) {
 	defer ctrl.Finish()
 
 	mStrg := mocks.NewMockorderStorager(ctrl)
+	mErrNoOrder := mocks.NewMockerrNoOrder(ctrl)
 
 	t.Run("valid test", func(t *testing.T) {
 		testOrder := &models.Order{
 			Number: validLuhnString,
 			UserID: testUserID,
 		}
-		mStrg.EXPECT().GetOrderByNum(gomock.Any(), testOrder.Number).Return(nil, storage.ErrNoOrder)
+		mErrNoOrder.EXPECT().IsErrNoOrder().Return(true)
+		mStrg.EXPECT().GetOrderByNum(gomock.Any(), testOrder.Number).Return(nil, mErrNoOrder)
 		mStrg.EXPECT().AddOrder(gomock.Any(), gomock.Any()).Return(nil)
 
 		s := NewOrderService(mStrg)
@@ -40,7 +41,7 @@ func TestOrderService_SaveOrder(t *testing.T) {
 
 		s := NewOrderService(mStrg)
 		err := s.SaveOrder(context.Background(), testOrder)
-		assert.Equal(t, err, ErrWrongNum)
+		assert.ErrorIs(t, err, ErrWrongNum)
 	})
 
 	t.Run("AddOrder error", func(t *testing.T) {
@@ -48,7 +49,8 @@ func TestOrderService_SaveOrder(t *testing.T) {
 			Number: validLuhnString,
 			UserID: testUserID,
 		}
-		mStrg.EXPECT().GetOrderByNum(gomock.Any(), testOrder.Number).Return(nil, storage.ErrNoOrder)
+		mErrNoOrder.EXPECT().IsErrNoOrder().Return(true)
+		mStrg.EXPECT().GetOrderByNum(gomock.Any(), testOrder.Number).Return(nil, mErrNoOrder)
 		mStrg.EXPECT().AddOrder(gomock.Any(), gomock.Any()).Return(errTest)
 
 		s := NewOrderService(mStrg)
@@ -80,7 +82,7 @@ func TestOrderService_SaveOrder(t *testing.T) {
 
 		s := NewOrderService(mStrg)
 		err := s.SaveOrder(context.Background(), testOrder)
-		assert.Equal(t, err, ErrOrderExists)
+		assert.ErrorIs(t, err, ErrOrderExists)
 	})
 
 	t.Run("order conflict error", func(t *testing.T) {
@@ -95,6 +97,6 @@ func TestOrderService_SaveOrder(t *testing.T) {
 
 		s := NewOrderService(mStrg)
 		err := s.SaveOrder(context.Background(), testOrder)
-		assert.Equal(t, err, ErrOrderConflict)
+		assert.ErrorIs(t, err, ErrOrderConflict)
 	})
 }

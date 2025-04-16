@@ -19,8 +19,9 @@ func TestLoginHandler_handle(t *testing.T) {
 	defer ctrl.Finish()
 
 	mService := mocks.NewMockloginServicer(ctrl)
+	mJWT := mocks.NewMockloginJWT(ctrl)
 
-	lohinHandler := NewLoginHandler(mService, testKey)
+	lohinHandler := NewLoginHandler(mService, mJWT)
 
 	app := fiber.New()
 	app.Post("/", lohinHandler)

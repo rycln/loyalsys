@@ -14,13 +14,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testJWTString = "abc.def.ghi"
+
 func TestRegisterHandler_handle(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mService := mocks.NewMockregServicer(ctrl)
+	mJWT := mocks.NewMockregJWT(ctrl)
 
-	registerHandler := NewRegisterHandler(mService, testKey)
+	registerHandler := NewRegisterHandler(mService, mJWT)
 
 	app := fiber.New()
 	app.Post("/", registerHandler)
@@ -31,6 +34,7 @@ func TestRegisterHandler_handle(t *testing.T) {
 			Password: testUserPassword,
 		}
 		mService.EXPECT().CreateUser(gomock.Any(), testUser).Return(testUserID, nil)
+		mJWT.EXPECT().NewJWTString(testUserID).Return(testJWTString)
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)
@@ -43,7 +47,7 @@ func TestRegisterHandler_handle(t *testing.T) {
 
 		assert.Equal(t, fiber.StatusOK, res.StatusCode)
 		assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
-		assert.NotEmpty(t, res.Header.Get("Authorization"))
+		assert.Contains(t, res.Header.Get("Authorization"), testJWTString)
 	})
 
 	t.Run("wrong json body", func(t *testing.T) {
