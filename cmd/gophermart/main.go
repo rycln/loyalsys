@@ -11,13 +11,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
 	"github.com/rycln/loyalsys/internal/api"
-	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/handlers"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/middleware"
 	"github.com/rycln/loyalsys/internal/services"
 	"github.com/rycln/loyalsys/internal/storage"
+	"github.com/rycln/loyalsys/internal/strategies/password"
 	"github.com/rycln/loyalsys/internal/worker"
 	"go.uber.org/zap/zapcore"
 )
@@ -51,7 +51,6 @@ func main() {
 
 	restyClient := resty.New()
 	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
-
 	workerCfg := worker.NewSyncWorkerConfigBuilder().
 		WithTimeout(cfg.Timeout).
 		Build()
@@ -60,8 +59,8 @@ func main() {
 	defer cancel()
 	go orderUpdater.Run(ctx)
 
-	passwordAdapter := auth.NewPasswordAdapter(auth.HashPasswordBcrypt, auth.CompareHashAndPasswordBcrypt)
-	userService := services.NewUserService(userStrg, passwordAdapter)
+	passwordStrategy := password.NewBCryptHasher()
+	userService := services.NewUserService(userStrg, passwordStrategy)
 	orderService := services.NewOrderService(orderStrg)
 	jwtService := services.NewJWTService(cfg.Key, tokenExp)
 
