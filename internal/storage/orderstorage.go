@@ -9,12 +9,6 @@ import (
 	"github.com/rycln/loyalsys/internal/models"
 )
 
-var (
-	ErrOrderExists   = errors.New("order already registered by user")
-	ErrOrderConflict = errors.New("order already registered by other user")
-	ErrNoOrder       = errors.New("order does not exist")
-)
-
 type OrderStorage struct {
 	db *sql.DB
 }
@@ -36,7 +30,7 @@ func (s *OrderStorage) GetOrderByNum(ctx context.Context, number string) (*model
 	var orderDB models.OrderDB
 	err := row.Scan(&orderDB.ID, &orderDB.Number, &orderDB.UserID, &orderDB.Status, &orderDB.Accrual, &orderDB.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrNoOrder
+		return nil, newErrNoOrder(ErrNoOrder)
 	}
 	if err != nil {
 		return nil, err
@@ -64,7 +58,7 @@ func (s *OrderStorage) GetOrdersByUserID(ctx context.Context, uid models.UserID)
 		return nil, err
 	}
 	if orders == nil {
-		return nil, ErrNoOrder
+		return nil, newErrNoOrder(ErrNoOrder)
 	}
 	return orders, nil
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
 	"go.uber.org/zap"
@@ -18,22 +17,26 @@ type regServicer interface {
 	CreateUser(context.Context, *models.User) (models.UserID, error)
 }
 
-type errLoginConflict interface {
-	error
-	IsErrLoginConflict() bool
+type regJWT interface {
+	NewJWTString(models.UserID) (string, error)
 }
 
 type RegisterHandler struct {
 	regService regServicer
-	jwtKey     string
+	jwt        regJWT
 }
 
-func NewRegisterHandler(regService regServicer, jwtKey string) func(*fiber.Ctx) error {
+func NewRegisterHandler(regService regServicer, jwt regJWT) func(*fiber.Ctx) error {
 	h := &RegisterHandler{
 		regService: regService,
-		jwtKey:     jwtKey,
+		jwt:        jwt,
 	}
 	return h.handle
+}
+
+type errLoginConflict interface {
+	error
+	IsErrLoginConflict() bool
 }
 
 func (h *RegisterHandler) handle(c *fiber.Ctx) error {
@@ -58,7 +61,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	jwt, err := auth.NewJWTString(uid, h.jwtKey)
+	jwt, err := h.jwt.NewJWTString(uid)
 	if err != nil {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusInternalServerError)

@@ -2,17 +2,9 @@ package services
 
 import (
 	"context"
-	"errors"
 
 	"github.com/ShiraazMoollatjie/goluhn"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
-)
-
-var (
-	ErrWrongNum      = errors.New("luhn algorithm validation failed")
-	ErrOrderExists   = errors.New("order already registered by user")
-	ErrOrderConflict = errors.New("order already registered by other user")
 )
 
 //go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
@@ -31,13 +23,18 @@ func NewOrderService(strg orderStorager) *OrderService {
 	return &OrderService{strg: strg}
 }
 
+type errNoOrder interface {
+	error
+	IsErrNoOrder() bool
+}
+
 func (s *OrderService) SaveOrder(ctx context.Context, order *models.Order) error {
 	err := goluhn.Validate(order.Number)
 	if err != nil {
-		return ErrWrongNum
+		return newErrWrongNum(ErrWrongNum)
 	}
 	checkOrder, err := s.strg.GetOrderByNum(ctx, order.Number)
-	if errors.Is(err, storage.ErrNoOrder) {
+	if e, ok := err.(errNoOrder); ok && e.IsErrNoOrder() {
 		err := s.strg.AddOrder(ctx, order)
 		if err != nil {
 			return err
@@ -48,9 +45,9 @@ func (s *OrderService) SaveOrder(ctx context.Context, order *models.Order) error
 		return err
 	}
 	if checkOrder.UserID == order.UserID {
-		return ErrOrderExists
+		return newErrOrderExists(ErrOrderExists)
 	}
-	return ErrOrderConflict
+	return newErrOrderConflict(ErrOrderConflict)
 }
 
 func (s *OrderService) GetUserOrders(ctx context.Context, uid models.UserID) ([]*models.OrderDB, error) {

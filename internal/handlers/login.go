@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
 	"go.uber.org/zap"
@@ -18,6 +17,23 @@ type loginServicer interface {
 	UserAuth(context.Context, *models.User) (models.UserID, error)
 }
 
+type loginJWT interface {
+	NewJWTString(models.UserID) (string, error)
+}
+
+type LoginHandler struct {
+	loginService loginServicer
+	jwt          loginJWT
+}
+
+func NewLoginHandler(loginService loginServicer, jwt loginJWT) func(*fiber.Ctx) error {
+	h := &LoginHandler{
+		loginService: loginService,
+		jwt:          jwt,
+	}
+	return h.handle
+}
+
 type errNoUser interface {
 	error
 	IsErrNoUser() bool
@@ -26,19 +42,6 @@ type errNoUser interface {
 type errWrongPassword interface {
 	error
 	IsErrWrongPassword() bool
-}
-
-type LoginHandler struct {
-	loginService loginServicer
-	jwtKey       string
-}
-
-func NewLoginHandler(loginService loginServicer, jwtKey string) func(*fiber.Ctx) error {
-	h := &LoginHandler{
-		loginService: loginService,
-		jwtKey:       jwtKey,
-	}
-	return h.handle
 }
 
 func (h *LoginHandler) handle(c *fiber.Ctx) error {
@@ -68,7 +71,7 @@ func (h *LoginHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	jwt, err := auth.NewJWTString(uid, h.jwtKey)
+	jwt, err := h.jwt.NewJWTString(uid)
 	if err != nil {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusInternalServerError)

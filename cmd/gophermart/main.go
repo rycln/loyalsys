@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/contrib/fiberzap/v2"
@@ -10,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
 	"github.com/rycln/loyalsys/internal/api"
+	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/handlers"
 	"github.com/rycln/loyalsys/internal/logger"
@@ -19,6 +21,8 @@ import (
 	"github.com/rycln/loyalsys/internal/worker"
 	"go.uber.org/zap/zapcore"
 )
+
+const tokenExp = time.Hour * 2
 
 func main() {
 	cfg, err := config.NewConfigBuilder().
@@ -42,8 +46,8 @@ func main() {
 	}
 	defer db.Close()
 
-	userstrg := storage.NewUserStorage(db)
-	orderstrg := storage.NewOrderStorage(db)
+	userStrg := storage.NewUserStorage(db)
+	orderStrg := storage.NewOrderStorage(db)
 
 	restyClient := resty.New()
 	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
@@ -51,18 +55,20 @@ func main() {
 	workerCfg := worker.NewSyncWorkerConfigBuilder().
 		WithTimeout(cfg.Timeout).
 		Build()
-	orderUpdater := worker.NewOrderSyncWorker(client, orderstrg, workerCfg)
+	orderUpdater := worker.NewOrderSyncWorker(client, orderStrg, workerCfg)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go orderUpdater.Run(ctx)
 
-	userservice := services.NewUserService(userstrg)
-	orderservice := services.NewOrderService(orderstrg)
+	passwordAdapter := auth.NewPasswordAdapter(auth.HashPasswordBcrypt, auth.CompareHashAndPasswordBcrypt)
+	userService := services.NewUserService(userStrg, passwordAdapter)
+	orderService := services.NewOrderService(orderStrg)
+	jwtService := services.NewJWTService(cfg.Key, tokenExp)
 
-	registerHandler := handlers.NewRegisterHandler(userservice, cfg.Key)
-	loginHandler := handlers.NewLoginHandler(userservice, cfg.Key)
-	postOrderHandler := handlers.NewPostOrderHandler(orderservice)
-	getOrderHandler := handlers.NewGetOrderHandler(orderservice)
+	registerHandler := handlers.NewRegisterHandler(userService, jwtService)
+	loginHandler := handlers.NewLoginHandler(userService, jwtService)
+	postOrderHandler := handlers.NewPostOrderHandler(orderService, jwtService)
+	getOrderHandler := handlers.NewGetOrderHandler(orderService, jwtService)
 
 	app := fiber.New()
 	app.Use(fiberzap.New(fiberzap.Config{

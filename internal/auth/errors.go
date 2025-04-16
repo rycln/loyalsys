@@ -4,7 +4,6 @@ import "errors"
 
 var (
 	ErrWrongPassword = errors.New("wrong password")
-	ErrInvalidJWT    = errors.New("invalid jwt")
 )
 
 type errWrongPassword struct {
