@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -54,6 +53,7 @@ func TestOrderSyncWorker_Run(t *testing.T) {
 		WithTickerPeriod(testTickerPeriod).
 		Build()
 	worker := NewOrderSyncWorker(mAPI, mStrg, testCfg)
+	stopCh := make(chan struct{})
 
 	t.Run("valid test", func(t *testing.T) {
 		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(testOrderNums, nil)
@@ -62,14 +62,14 @@ func TestOrderSyncWorker_Run(t *testing.T) {
 		}
 		mStrg.EXPECT().UpdateOrdersBatch(gomock.Any(), gomock.Any()).Return(nil)
 
-		err := worker.updateOrdersBatch(context.Background())
+		err := worker.updateOrdersBatch(stopCh)
 		assert.NoError(t, err)
 	})
 
 	t.Run("get orders num error", func(t *testing.T) {
 		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(nil, errTest)
 
-		err := worker.updateOrdersBatch(context.Background())
+		err := worker.updateOrdersBatch(stopCh)
 		assert.ErrorIs(t, err, errTest)
 	})
 
@@ -77,7 +77,7 @@ func TestOrderSyncWorker_Run(t *testing.T) {
 		var zeroOrderNums []string
 		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(zeroOrderNums, nil)
 
-		err := worker.updateOrdersBatch(context.Background())
+		err := worker.updateOrdersBatch(stopCh)
 		assert.NoError(t, err)
 	})
 
@@ -88,7 +88,7 @@ func TestOrderSyncWorker_Run(t *testing.T) {
 		}
 		mStrg.EXPECT().UpdateOrdersBatch(gomock.Any(), gomock.Any()).Return(errTest)
 
-		err := worker.updateOrdersBatch(context.Background())
+		err := worker.updateOrdersBatch(stopCh)
 		assert.ErrorIs(t, err, errTest)
 	})
 }

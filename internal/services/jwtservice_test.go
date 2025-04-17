@@ -15,7 +15,7 @@ const (
 )
 
 func TestNewJWTString(t *testing.T) {
-	jwtService := NewJWTService(testKey, testExp)
+	jwtService := NewJWTService(testKey)
 
 	t.Run("valid test", func(t *testing.T) {
 		jwtString, err := jwtService.NewJWTString(testUserID)
@@ -25,7 +25,7 @@ func TestNewJWTString(t *testing.T) {
 }
 
 func TestParseIDFromAuthHeader(t *testing.T) {
-	jwtService := NewJWTService(testKey, testExp)
+	jwtService := NewJWTService(testKey)
 
 	t.Run("valid test", func(t *testing.T) {
 		claims := jwtClaims{

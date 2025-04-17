@@ -40,31 +40,39 @@ func NewOrderSyncWorker(api syncAPI, storage syncStorager, cfg *SyncWorkerConfig
 	}
 }
 
-func (worker *OrderSyncWorker) Run(ctx context.Context) {
-	ticker := time.NewTicker(worker.cfg.tickerPeriod)
-	defer ticker.Stop()
+func (worker *OrderSyncWorker) Run(stopCh <-chan struct{}) chan struct{} {
+	doneCh := make(chan struct{})
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			err := worker.updateOrdersBatch(ctx)
-			if e, ok := err.(errRetryAfter); ok && e.IsErrRetryAfter() {
-				dur := e.GetRetryAfterDuration()
-				ticker.Reset(dur)
-				logger.Log.Info("worker retry after", zap.Duration("duration, sec:", dur))
-				continue
-			}
-			if err != nil {
-				logger.Log.Debug("worker error", zap.Error(err))
+	go func() {
+		defer close(doneCh)
+
+		ticker := time.NewTicker(worker.cfg.tickerPeriod)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				err := worker.updateOrdersBatch(stopCh)
+				if e, ok := err.(errRetryAfter); ok && e.IsErrRetryAfter() {
+					dur := e.GetRetryAfterDuration()
+					ticker.Reset(dur)
+					logger.Log.Info("worker retry after", zap.Duration("duration, sec:", dur))
+					continue
+				}
+				if err != nil {
+					logger.Log.Debug("worker error", zap.Error(err))
+				}
 			}
 		}
-	}
+	}()
+
+	return doneCh
 }
 
-func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
-	ctxDB, cancelDB := context.WithTimeout(ctx, worker.cfg.timeout)
+func (worker *OrderSyncWorker) updateOrdersBatch(stopCh <-chan struct{}) error {
+	ctxDB, cancelDB := context.WithTimeout(context.Background(), worker.cfg.timeout)
 	defer cancelDB()
 
 	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctxDB)
@@ -75,18 +83,15 @@ func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
 		return nil
 	}
 
-	ctxPipeline, cancelPipeline := context.WithCancel(ctx)
-	defer cancelPipeline()
-
-	numsChan := orderNumbersGenerator(ctxPipeline, orderNums)
-	resultChans := worker.ordersFanOut(ctxPipeline, numsChan)
-	resultCh := ordersFanIn(ctxPipeline, resultChans)
+	numsChan := orderNumbersGenerator(stopCh, orderNums)
+	resultChans := worker.ordersFanOut(stopCh, numsChan)
+	resultCh := ordersFanIn(stopCh, resultChans)
 
 	var updatedOrders []*models.OrderDB
 
 	for result := range resultCh {
 		select {
-		case <-ctx.Done():
+		case <-stopCh:
 			return nil
 		case <-resultCh:
 			if err, ok := result.err.(errRetryAfter); ok && err.IsErrRetryAfter() {
@@ -100,7 +105,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
 		}
 	}
 
-	ctxDB, cancelDB = context.WithTimeout(ctx, worker.cfg.timeout)
+	ctxDB, cancelDB = context.WithTimeout(context.Background(), worker.cfg.timeout)
 	defer cancelDB()
 
 	err = worker.storage.UpdateOrdersBatch(ctxDB, updatedOrders)

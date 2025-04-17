@@ -9,17 +9,17 @@ import (
 	"github.com/rycln/loyalsys/internal/models"
 )
 
+const tokenExp = time.Duration(2) * time.Hour
+
 var ErrNoUserID = errors.New("jwt does not contain user id")
 
 type JWTService struct {
 	key string
-	exp time.Duration
 }
 
-func NewJWTService(key string, exp time.Duration) *JWTService {
+func NewJWTService(key string) *JWTService {
 	return &JWTService{
 		key: key,
-		exp: exp,
 	}
 }
 
@@ -38,7 +38,7 @@ func (c jwtClaims) Validate() error {
 func (s *JWTService) NewJWTString(userID models.UserID) (string, error) {
 	claims := jwtClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.exp)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
 		UserID: userID,
 	}
