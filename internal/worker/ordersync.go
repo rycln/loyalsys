@@ -98,7 +98,7 @@ func (worker *OrderSyncWorker) updateOrdersBatch(stopCh <-chan struct{}) error {
 				return err
 			}
 			if result.err != nil {
-				logger.Log.Debug("pipeline error", zap.Error(err))
+				logger.Log.Debug("pipeline error", zap.Error(result.err))
 				continue
 			}
 			updatedOrders = append(updatedOrders, result.order)

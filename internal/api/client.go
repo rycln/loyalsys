@@ -7,9 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
-	"go.uber.org/zap"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -31,16 +29,14 @@ func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string)
 		"orderNum": num,
 	}).Get(c.baseURL + "/api/orders/{orderNum}")
 	if err != nil {
-		logger.Log.Debug("client error", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("client error: %v", err)
 	}
 
 	if res.StatusCode() == http.StatusOK {
 		var order models.OrderAccrual
 		err = json.Unmarshal(res.Body(), &order)
 		if err != nil {
-			logger.Log.Debug("client error", zap.Error(err))
-			return nil, err
+			return nil, fmt.Errorf("client error: %v", err)
 		}
 		return &order, nil
 	}
@@ -50,10 +46,9 @@ func (c *OrderUpdateClient) GetOrderFromAccrual(ctx context.Context, num string)
 	if res.StatusCode() == http.StatusTooManyRequests {
 		dur, err := time.ParseDuration(res.Header().Get("Retry-After") + "s")
 		if err != nil {
-			logger.Log.Debug("client error", zap.Error(err))
-			return nil, err
+			return nil, fmt.Errorf("client error: %v", err)
 		}
 		return nil, newErrRetryAfter(dur, ErrTooManyRequests)
 	}
-	return nil, fmt.Errorf("the client received an unexpected status code: %s", res.Status())
+	return nil, fmt.Errorf("client received an unexpected status code: %s", res.Status())
 }
