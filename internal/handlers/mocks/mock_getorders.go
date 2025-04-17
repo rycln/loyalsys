@@ -12,31 +12,31 @@ import (
 	models "github.com/rycln/loyalsys/internal/models"
 )
 
-// MockgetOrderServicer is a mock of getOrderServicer interface.
-type MockgetOrderServicer struct {
+// MockgetOrdersServicer is a mock of getOrdersServicer interface.
+type MockgetOrdersServicer struct {
 	ctrl     *gomock.Controller
-	recorder *MockgetOrderServicerMockRecorder
+	recorder *MockgetOrdersServicerMockRecorder
 }
 
-// MockgetOrderServicerMockRecorder is the mock recorder for MockgetOrderServicer.
-type MockgetOrderServicerMockRecorder struct {
-	mock *MockgetOrderServicer
+// MockgetOrdersServicerMockRecorder is the mock recorder for MockgetOrdersServicer.
+type MockgetOrdersServicerMockRecorder struct {
+	mock *MockgetOrdersServicer
 }
 
-// NewMockgetOrderServicer creates a new mock instance.
-func NewMockgetOrderServicer(ctrl *gomock.Controller) *MockgetOrderServicer {
-	mock := &MockgetOrderServicer{ctrl: ctrl}
-	mock.recorder = &MockgetOrderServicerMockRecorder{mock}
+// NewMockgetOrdersServicer creates a new mock instance.
+func NewMockgetOrdersServicer(ctrl *gomock.Controller) *MockgetOrdersServicer {
+	mock := &MockgetOrdersServicer{ctrl: ctrl}
+	mock.recorder = &MockgetOrdersServicerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockgetOrderServicer) EXPECT() *MockgetOrderServicerMockRecorder {
+func (m *MockgetOrdersServicer) EXPECT() *MockgetOrdersServicerMockRecorder {
 	return m.recorder
 }
 
 // GetUserOrders mocks base method.
-func (m *MockgetOrderServicer) GetUserOrders(arg0 context.Context, arg1 models.UserID) ([]*models.OrderDB, error) {
+func (m *MockgetOrdersServicer) GetUserOrders(arg0 context.Context, arg1 models.UserID) ([]*models.OrderDB, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserOrders", arg0, arg1)
 	ret0, _ := ret[0].([]*models.OrderDB)
@@ -45,36 +45,36 @@ func (m *MockgetOrderServicer) GetUserOrders(arg0 context.Context, arg1 models.U
 }
 
 // GetUserOrders indicates an expected call of GetUserOrders.
-func (mr *MockgetOrderServicerMockRecorder) GetUserOrders(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockgetOrdersServicerMockRecorder) GetUserOrders(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserOrders", reflect.TypeOf((*MockgetOrderServicer)(nil).GetUserOrders), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserOrders", reflect.TypeOf((*MockgetOrdersServicer)(nil).GetUserOrders), arg0, arg1)
 }
 
-// MockgetOrderJWT is a mock of getOrderJWT interface.
-type MockgetOrderJWT struct {
+// MockgetOrdersJWT is a mock of getOrdersJWT interface.
+type MockgetOrdersJWT struct {
 	ctrl     *gomock.Controller
-	recorder *MockgetOrderJWTMockRecorder
+	recorder *MockgetOrdersJWTMockRecorder
 }
 
-// MockgetOrderJWTMockRecorder is the mock recorder for MockgetOrderJWT.
-type MockgetOrderJWTMockRecorder struct {
-	mock *MockgetOrderJWT
+// MockgetOrdersJWTMockRecorder is the mock recorder for MockgetOrdersJWT.
+type MockgetOrdersJWTMockRecorder struct {
+	mock *MockgetOrdersJWT
 }
 
-// NewMockgetOrderJWT creates a new mock instance.
-func NewMockgetOrderJWT(ctrl *gomock.Controller) *MockgetOrderJWT {
-	mock := &MockgetOrderJWT{ctrl: ctrl}
-	mock.recorder = &MockgetOrderJWTMockRecorder{mock}
+// NewMockgetOrdersJWT creates a new mock instance.
+func NewMockgetOrdersJWT(ctrl *gomock.Controller) *MockgetOrdersJWT {
+	mock := &MockgetOrdersJWT{ctrl: ctrl}
+	mock.recorder = &MockgetOrdersJWTMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockgetOrderJWT) EXPECT() *MockgetOrderJWTMockRecorder {
+func (m *MockgetOrdersJWT) EXPECT() *MockgetOrdersJWTMockRecorder {
 	return m.recorder
 }
 
 // ParseIDFromAuthHeader mocks base method.
-func (m *MockgetOrderJWT) ParseIDFromAuthHeader(arg0 string) (models.UserID, error) {
+func (m *MockgetOrdersJWT) ParseIDFromAuthHeader(arg0 string) (models.UserID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ParseIDFromAuthHeader", arg0)
 	ret0, _ := ret[0].(models.UserID)
@@ -83,9 +83,9 @@ func (m *MockgetOrderJWT) ParseIDFromAuthHeader(arg0 string) (models.UserID, err
 }
 
 // ParseIDFromAuthHeader indicates an expected call of ParseIDFromAuthHeader.
-func (mr *MockgetOrderJWTMockRecorder) ParseIDFromAuthHeader(arg0 interface{}) *gomock.Call {
+func (mr *MockgetOrdersJWTMockRecorder) ParseIDFromAuthHeader(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseIDFromAuthHeader", reflect.TypeOf((*MockgetOrderJWT)(nil).ParseIDFromAuthHeader), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseIDFromAuthHeader", reflect.TypeOf((*MockgetOrdersJWT)(nil).ParseIDFromAuthHeader), arg0)
 }
 
 // MockerrNoOrder is a mock of errNoOrder interface.

@@ -67,7 +67,7 @@ func main() {
 	registerHandler := handlers.NewRegisterHandler(userService, jwtService)
 	loginHandler := handlers.NewLoginHandler(userService, jwtService)
 	postOrderHandler := handlers.NewPostOrderHandler(orderService, jwtService)
-	getOrderHandler := handlers.NewGetOrderHandler(orderService, jwtService)
+	getOrdersHandler := handlers.NewGetOrdersHandler(orderService, jwtService)
 
 	app := fiber.New()
 	app.Use(fiberzap.New(fiberzap.Config{
@@ -81,7 +81,7 @@ func main() {
 		SigningKey: jwtware.SigningKey{Key: []byte(cfg.Key)},
 	}))
 	app.Post("/api/user/orders", middleware.ContentTypeChecker("text/plain"), timeout.NewWithContext(postOrderHandler, cfg.Timeout))
-	app.Get("/api/user/orders", timeout.NewWithContext(getOrderHandler, cfg.Timeout))
+	app.Get("/api/user/orders", timeout.NewWithContext(getOrdersHandler, cfg.Timeout))
 
 	err = app.Listen(cfg.RunAddr)
 	if err != nil {

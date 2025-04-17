@@ -12,21 +12,21 @@ import (
 
 //go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
 
-type getOrderServicer interface {
+type getOrdersServicer interface {
 	GetUserOrders(context.Context, models.UserID) ([]*models.OrderDB, error)
 }
 
-type getOrderJWT interface {
+type getOrdersJWT interface {
 	ParseIDFromAuthHeader(string) (models.UserID, error)
 }
 
-type GetOrderHandler struct {
-	getOrderService getOrderServicer
-	jwt             getOrderJWT
+type GetOrdersHandler struct {
+	getOrderService getOrdersServicer
+	jwt             getOrdersJWT
 }
 
-func NewGetOrderHandler(getOrderService getOrderServicer, jwt getOrderJWT) func(*fiber.Ctx) error {
-	h := &GetOrderHandler{
+func NewGetOrdersHandler(getOrderService getOrdersServicer, jwt getOrdersJWT) func(*fiber.Ctx) error {
+	h := &GetOrdersHandler{
 		getOrderService: getOrderService,
 		jwt:             jwt,
 	}
@@ -38,7 +38,7 @@ type errNoOrder interface {
 	IsErrNoOrder() bool
 }
 
-func (h *GetOrderHandler) handle(c *fiber.Ctx) error {
+func (h *GetOrdersHandler) handle(c *fiber.Ctx) error {
 	uid, err := h.jwt.ParseIDFromAuthHeader(c.Get("Authorization"))
 	if err != nil {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
