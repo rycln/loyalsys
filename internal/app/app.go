@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/timeout"
 	"github.com/rycln/loyalsys/internal/api"
 	"github.com/rycln/loyalsys/internal/config"
+	"github.com/rycln/loyalsys/internal/db"
 	"github.com/rycln/loyalsys/internal/handlers"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/middleware"
@@ -35,13 +36,17 @@ func New(cfg *config.Cfg) (*App, error) {
 		return nil, fmt.Errorf("can't initialize the logger: %v", err)
 	}
 
-	db, err := storage.NewDB(cfg.DatabaseURI)
+	database, err := storage.NewDB(cfg.DatabaseURI)
 	if err != nil {
 		return nil, fmt.Errorf("can't open database: %v", err)
 	}
+	err = db.RunMigrations(database)
+	if err != nil {
+		return nil, fmt.Errorf("can't apply migrations: %v", err)
+	}
 
-	userStrg := storage.NewUserStorage(db)
-	orderStrg := storage.NewOrderStorage(db)
+	userStrg := storage.NewUserStorage(database)
+	orderStrg := storage.NewOrderStorage(database)
 
 	restyClient := resty.New()
 	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
@@ -79,7 +84,7 @@ func New(cfg *config.Cfg) (*App, error) {
 
 	return &App{
 		App:          app,
-		db:           db,
+		db:           database,
 		workerStopCh: stopCh,
 		workerDoneCh: doneCh,
 	}, nil

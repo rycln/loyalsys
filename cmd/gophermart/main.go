@@ -33,7 +33,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	shutdown := make(chan struct{})
+	shutdownDone := make(chan struct{})
 
 	go func() {
 		<-stop
@@ -46,7 +46,7 @@ func main() {
 			log.Fatalf("Shutdown error: %v", err)
 		}
 
-		shutdown <- struct{}{}
+		shutdownDone <- struct{}{}
 	}()
 
 	err = app.Listen(cfg.RunAddr)
@@ -54,7 +54,7 @@ func main() {
 		log.Fatalf("Can't start the server: %v", err)
 	}
 
-	<-shutdown
+	<-shutdownDone
 
 	err = app.Cleanup()
 	if err != nil {
