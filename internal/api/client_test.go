@@ -20,6 +20,7 @@ const (
 	testOrderNum                = "123"
 	testOrderWrongNum           = "456"
 	testOrderNumTooManyRequests = "789"
+	testOrderUnexpected         = "abc"
 	testTimeout                 = time.Duration(1) * time.Second
 	testRetryAfterValue         = time.Duration(60) * time.Second
 )
@@ -34,6 +35,10 @@ func TestOrderUpdateClient_GetOrderFromAccrual(t *testing.T) {
 	require.NoError(t, err)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == fmt.Sprintf("/api/orders/%s", testOrderUnexpected) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		if r.URL.Path == fmt.Sprintf("/api/orders/%s", testOrderNum) {
 			w.WriteHeader(http.StatusOK)
 			w.Write(testOrderJSON)
@@ -47,7 +52,6 @@ func TestOrderUpdateClient_GetOrderFromAccrual(t *testing.T) {
 			w.WriteHeader(http.StatusTooManyRequests)
 			return
 		}
-		w.WriteHeader(http.StatusBadRequest)
 	}))
 
 	defer server.Close()
@@ -76,6 +80,11 @@ func TestOrderUpdateClient_GetOrderFromAccrual(t *testing.T) {
 	})
 
 	t.Run("unexpected status code", func(t *testing.T) {
+		_, err := client.GetOrderFromAccrual(context.Background(), testOrderUnexpected)
+		assert.Error(t, err)
+	})
+
+	t.Run("ok without body", func(t *testing.T) {
 		_, err := client.GetOrderFromAccrual(context.Background(), "")
 		assert.Error(t, err)
 	})
