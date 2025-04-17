@@ -47,18 +47,18 @@ func TestOrderSyncWorker_Run(t *testing.T) {
 		},
 	}
 
-	mApi := mocks.NewMocksyncAPI(ctrl)
+	mAPI := mocks.NewMocksyncAPI(ctrl)
 	mStrg := mocks.NewMocksyncStorager(ctrl)
 	testCfg := NewSyncWorkerConfigBuilder().
 		WithTimeout(testTimeout).
 		WithTickerPeriod(testTickerPeriod).
 		Build()
-	worker := NewOrderSyncWorker(mApi, mStrg, testCfg)
+	worker := NewOrderSyncWorker(mAPI, mStrg, testCfg)
 
 	t.Run("valid test", func(t *testing.T) {
 		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(testOrderNums, nil)
 		for i, testOrder := range testOrders {
-			mApi.EXPECT().GetOrderFromAccrual(gomock.Any(), testOrderNums[i]).Return(testOrder, nil)
+			mAPI.EXPECT().GetOrderFromAccrual(gomock.Any(), testOrderNums[i]).Return(testOrder, nil)
 		}
 		mStrg.EXPECT().UpdateOrdersBatch(gomock.Any(), gomock.Any()).Return(nil)
 
@@ -84,7 +84,7 @@ func TestOrderSyncWorker_Run(t *testing.T) {
 	t.Run("get orders num error", func(t *testing.T) {
 		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(testOrderNums, nil)
 		for i, testOrder := range testOrders {
-			mApi.EXPECT().GetOrderFromAccrual(gomock.Any(), testOrderNums[i]).Return(testOrder, nil)
+			mAPI.EXPECT().GetOrderFromAccrual(gomock.Any(), testOrderNums[i]).Return(testOrder, nil)
 		}
 		mStrg.EXPECT().UpdateOrdersBatch(gomock.Any(), gomock.Any()).Return(errTest)
 
