@@ -33,6 +33,11 @@ func (b *SyncWorkerConfigBuilder) WithTimeout(timeout time.Duration) *SyncWorker
 	return b
 }
 
+func (b *SyncWorkerConfigBuilder) WithTickerPeriod(period time.Duration) *SyncWorkerConfigBuilder {
+	b.cfg.tickerPeriod = period
+	return b
+}
+
 func (b *SyncWorkerConfigBuilder) Build() *SyncWorkerConfig {
 	return b.cfg
 }

@@ -9,6 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
+
 type syncAPI interface {
 	GetOrderFromAccrual(context.Context, string) (*models.OrderAccrual, error)
 }
