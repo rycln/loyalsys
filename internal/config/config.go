@@ -22,7 +22,7 @@ type Cfg struct {
 	AccrualAddr string        `env:"ACCRUAL_SYSTEM_ADDRESS"`
 	Timeout     time.Duration `env:"TIMEOUT_DUR"`
 	Key         string        `env:"JWT_KEY"`
-	LogLevel    string        `env:"-"`
+	LogLevel    string        `env:"LOG_LEVEL"`
 }
 
 type ConfigBuilder struct {
