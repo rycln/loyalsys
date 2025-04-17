@@ -21,10 +21,10 @@ func TestLoginHandler_handle(t *testing.T) {
 	mService := mocks.NewMockloginServicer(ctrl)
 	mJWT := mocks.NewMockloginJWT(ctrl)
 
-	lohinHandler := NewLoginHandler(mService, mJWT)
+	loginHandler := NewLoginHandler(mService, mJWT)
 
 	app := fiber.New()
-	app.Post("/", lohinHandler)
+	app.Post("/", loginHandler)
 
 	t.Run("valid test", func(t *testing.T) {
 		testUser := &models.User{
@@ -32,6 +32,7 @@ func TestLoginHandler_handle(t *testing.T) {
 			Password: testUserPassword,
 		}
 		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(testUserID, nil)
+		mJWT.EXPECT().NewJWTString(testUserID).Return(testJWTString, nil)
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)
@@ -45,6 +46,7 @@ func TestLoginHandler_handle(t *testing.T) {
 		assert.Equal(t, fiber.StatusOK, res.StatusCode)
 		assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
 		assert.NotEmpty(t, res.Header.Get("Authorization"))
+		assert.Contains(t, res.Header.Get("Authorization"), testJWTString)
 	})
 
 	t.Run("wrong json body", func(t *testing.T) {
@@ -137,5 +139,25 @@ func TestLoginHandler_handle(t *testing.T) {
 		defer res.Body.Close()
 
 		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+	})
+
+	t.Run("jwt error", func(t *testing.T) {
+		testUser := &models.User{
+			Login:    testUserLogin,
+			Password: testUserPassword,
+		}
+		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(testUserID, nil)
+		mJWT.EXPECT().NewJWTString(testUserID).Return("", errTest)
+
+		body, err := json.Marshal(testUser)
+		require.NoError(t, err)
+		bodyReader := bytes.NewReader(body)
+		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
+
+		res, err := app.Test(request, -1)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, fiber.StatusInternalServerError, res.StatusCode)
 	})
 }

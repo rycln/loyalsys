@@ -13,6 +13,7 @@ const (
 	testUserPassword = "password"
 	testKey          = "secret_key"
 	testTimeout      = time.Duration(5) * time.Second
+	testJWTString    = "abc.def.ghi"
 )
 
 var (
