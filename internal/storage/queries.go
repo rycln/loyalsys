@@ -61,7 +61,7 @@ const sqlGetOrdersByUserID = `
 const sqlGetWithdrawalsByUserID = `
 	SELECT 
 		id, 
-		order, 
+		number, 
 		sum, 
 		processed_at 
 	FROM withdrawals 
@@ -79,6 +79,6 @@ const sqlGetBalanceByUserID = `
 `
 
 const sqlAddWithdrawal = `
-	INSERT INTO withdrawals (order, user_id, sum) 
+	INSERT INTO withdrawals (number, user_id, sum) 
 	VALUES ($1, $2, $3)
 `
