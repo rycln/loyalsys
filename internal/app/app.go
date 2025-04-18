@@ -66,6 +66,7 @@ func New() (*App, error) {
 	userStrg := storage.NewUserStorage(database)
 	orderStrg := storage.NewOrderStorage(database)
 	withdrawalStrg := storage.NewWithdrawalStorage(database)
+	balanceStrg := storage.NewBalanceStorage(database)
 
 	restyClient := resty.New()
 	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
@@ -81,6 +82,7 @@ func New() (*App, error) {
 	userService := services.NewUserService(userStrg, passwordStrategy)
 	orderService := services.NewOrderService(orderStrg)
 	withdrawalService := services.NewWithdrawalService(withdrawalStrg)
+	balanceService := services.NewBalanceService(balanceStrg)
 	jwtService := services.NewJWTService(cfg.Key)
 
 	registerHandler := handlers.NewRegisterHandler(userService, jwtService)
@@ -88,6 +90,7 @@ func New() (*App, error) {
 	postOrderHandler := handlers.NewPostOrderHandler(orderService, jwtService)
 	getOrdersHandler := handlers.NewGetOrdersHandler(orderService, jwtService)
 	getWithdrawalsHandler := handlers.NewGetWithdrawalsHandler(withdrawalService, jwtService)
+	getBalanceHandler := handlers.NewGetBalanceHandler(balanceService, jwtService)
 
 	app := fiber.New()
 	app.Use(fiberzap.New(fiberzap.Config{
@@ -102,6 +105,7 @@ func New() (*App, error) {
 	}))
 	app.Post("/api/user/orders", middleware.ContentTypeChecker("text/plain"), timeout.NewWithContext(postOrderHandler, cfg.Timeout))
 	app.Get("/api/user/orders", timeout.NewWithContext(getOrdersHandler, cfg.Timeout))
+	app.Get("/api/user/balance", timeout.NewWithContext(getBalanceHandler, cfg.Timeout))
 	app.Get("/api/user/withdrawals", timeout.NewWithContext(getWithdrawalsHandler, cfg.Timeout))
 
 	return &App{

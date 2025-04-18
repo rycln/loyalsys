@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"regexp"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -21,9 +23,7 @@ var testCreatedAt = time.Now()
 
 func TestOrderStorage_AddOrder(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	strg := NewOrderStorage(db)
@@ -33,8 +33,10 @@ func TestOrderStorage_AddOrder(t *testing.T) {
 		UserID: testUserID,
 	}
 
+	expectedQuery := regexp.QuoteMeta(sqlAddOrder)
+
 	t.Run("valid test", func(t *testing.T) {
-		mock.ExpectExec("INSERT INTO orders").WithArgs(testOrder.Number, testOrder.UserID).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec(expectedQuery).WithArgs(testOrder.Number, testOrder.UserID).WillReturnResult(sqlmock.NewResult(1, 1))
 
 		err := strg.AddOrder(context.Background(), testOrder)
 		assert.NoError(t, err)
@@ -42,7 +44,7 @@ func TestOrderStorage_AddOrder(t *testing.T) {
 	})
 
 	t.Run("some error", func(t *testing.T) {
-		mock.ExpectExec("INSERT INTO orders").WithArgs(testOrder.Number, testOrder.UserID).WillReturnError(errTest)
+		mock.ExpectExec(expectedQuery).WithArgs(testOrder.Number, testOrder.UserID).WillReturnError(errTest)
 
 		err := strg.AddOrder(context.Background(), testOrder)
 		assert.Error(t, err)
@@ -52,9 +54,7 @@ func TestOrderStorage_AddOrder(t *testing.T) {
 
 func TestOrderStorage_GetOrderByNum(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	strg := NewOrderStorage(db)
@@ -68,9 +68,11 @@ func TestOrderStorage_GetOrderByNum(t *testing.T) {
 		CreatedAt: testCreatedAt.String(),
 	}
 
+	expectedQuery := regexp.QuoteMeta(sqlGetOrderByNum)
+
 	t.Run("valid test", func(t *testing.T) {
 		rows := mock.NewRows([]string{"id", "number", "user_id", "status", "accrual", "created_at"}).AddRow(testOrder.ID, testOrder.Number, testOrder.UserID, testOrder.Status, testOrder.Accrual, testOrder.CreatedAt)
-		mock.ExpectQuery("SELECT id, number, user_id, status, accrual, created_at FROM orders").WithArgs(testOrder.Number).WillReturnRows(rows)
+		mock.ExpectQuery(expectedQuery).WithArgs(testOrder.Number).WillReturnRows(rows)
 
 		orderDB, err := strg.GetOrderByNum(context.Background(), testOrder.Number)
 		assert.NoError(t, err)
@@ -79,7 +81,7 @@ func TestOrderStorage_GetOrderByNum(t *testing.T) {
 	})
 
 	t.Run("no order error", func(t *testing.T) {
-		mock.ExpectQuery("SELECT id, number, user_id, status, accrual, created_at FROM orders").WithArgs(testOrder.Number).WillReturnError(sql.ErrNoRows)
+		mock.ExpectQuery(expectedQuery).WithArgs(testOrder.Number).WillReturnError(sql.ErrNoRows)
 
 		_, err := strg.GetOrderByNum(context.Background(), testOrder.Number)
 		assert.ErrorIs(t, err, ErrNoOrder)
@@ -87,7 +89,7 @@ func TestOrderStorage_GetOrderByNum(t *testing.T) {
 	})
 
 	t.Run("some error", func(t *testing.T) {
-		mock.ExpectQuery("SELECT id, number, user_id, status, accrual, created_at FROM orders").WithArgs(testOrder.Number).WillReturnError(errTest)
+		mock.ExpectQuery(expectedQuery).WithArgs(testOrder.Number).WillReturnError(errTest)
 
 		_, err := strg.GetOrderByNum(context.Background(), testOrder.Number)
 		assert.Error(t, err)
@@ -97,9 +99,7 @@ func TestOrderStorage_GetOrderByNum(t *testing.T) {
 
 func TestOrderStorage_GetOrdersByUserID(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	strg := NewOrderStorage(db)
@@ -111,10 +111,12 @@ func TestOrderStorage_GetOrdersByUserID(t *testing.T) {
 		CreatedAt: testCreatedAt.String(),
 	}
 
+	expectedQuery := regexp.QuoteMeta(sqlGetOrdersByUserID)
+
 	t.Run("valid test", func(t *testing.T) {
 		rows := mock.NewRows([]string{"number", "status", "accrual", "created_at"}).
 			AddRow(testOrder.Number, testOrder.Status, testOrder.Accrual, testOrder.CreatedAt)
-		mock.ExpectQuery("SELECT number, status, accrual, created_at FROM orders").WithArgs(testUserID).WillReturnRows(rows)
+		mock.ExpectQuery(expectedQuery).WithArgs(testUserID).WillReturnRows(rows)
 
 		orderDB, err := strg.GetOrdersByUserID(context.Background(), testUserID)
 		assert.NoError(t, err)
@@ -123,7 +125,7 @@ func TestOrderStorage_GetOrdersByUserID(t *testing.T) {
 	})
 
 	t.Run("some error", func(t *testing.T) {
-		mock.ExpectQuery("SELECT number, status, accrual, created_at FROM orders").WithArgs(testUserID).WillReturnError(errTest)
+		mock.ExpectQuery(expectedQuery).WithArgs(testUserID).WillReturnError(errTest)
 
 		_, err := strg.GetOrdersByUserID(context.Background(), testUserID)
 		assert.Error(t, err)
@@ -132,7 +134,7 @@ func TestOrderStorage_GetOrdersByUserID(t *testing.T) {
 
 	t.Run("empty response", func(t *testing.T) {
 		rows := mock.NewRows([]string{"number", "status", "accrual", "created_at"})
-		mock.ExpectQuery("SELECT number, status, accrual, created_at FROM orders").WillReturnRows(rows)
+		mock.ExpectQuery(expectedQuery).WillReturnRows(rows)
 
 		_, err := strg.GetOrdersByUserID(context.Background(), testUserID)
 		assert.ErrorIs(t, err, ErrNoOrder)
@@ -142,9 +144,7 @@ func TestOrderStorage_GetOrdersByUserID(t *testing.T) {
 
 func TestOrderStorage_GetInconclusiveOrderNums(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	strg := NewOrderStorage(db)
@@ -154,9 +154,11 @@ func TestOrderStorage_GetInconclusiveOrderNums(t *testing.T) {
 		"456",
 	}
 
+	expectedQuery := regexp.QuoteMeta(sqlGetInconclusiveOrderNums)
+
 	t.Run("valid test", func(t *testing.T) {
 		rows := mock.NewRows([]string{"number"}).AddRow(orderNums[0]).AddRow(orderNums[1])
-		mock.ExpectQuery("SELECT number FROM orders").WillReturnRows(rows)
+		mock.ExpectQuery(expectedQuery).WillReturnRows(rows)
 
 		nums, err := strg.GetInconclusiveOrderNums(context.Background())
 		assert.NoError(t, err)
@@ -165,7 +167,7 @@ func TestOrderStorage_GetInconclusiveOrderNums(t *testing.T) {
 	})
 
 	t.Run("some error", func(t *testing.T) {
-		mock.ExpectQuery("SELECT number FROM orders").WillReturnError(errTest)
+		mock.ExpectQuery(expectedQuery).WillReturnError(errTest)
 
 		_, err := strg.GetInconclusiveOrderNums(context.Background())
 		assert.Error(t, err)
@@ -175,9 +177,7 @@ func TestOrderStorage_GetInconclusiveOrderNums(t *testing.T) {
 
 func TestOrderStorage_UpdateOrdersBatch(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	strg := NewOrderStorage(db)
@@ -197,9 +197,11 @@ func TestOrderStorage_UpdateOrdersBatch(t *testing.T) {
 		},
 	}
 
+	expectedQuery := regexp.QuoteMeta(sqlUpdateOrdersBatch)
+
 	t.Run("valid test", func(t *testing.T) {
 		mock.ExpectBegin()
-		mockStmt := mock.ExpectPrepare("UPDATE orders")
+		mockStmt := mock.ExpectPrepare(expectedQuery)
 		for _, testOrder := range testOrders {
 			mockStmt.ExpectExec().WithArgs(testOrder.Status, testOrder.Accrual, testOrder.Number).WillReturnResult(sqlmock.NewResult(1, 1))
 		}
@@ -220,7 +222,7 @@ func TestOrderStorage_UpdateOrdersBatch(t *testing.T) {
 
 	t.Run("prepare error", func(t *testing.T) {
 		mock.ExpectBegin()
-		mock.ExpectPrepare("UPDATE orders").WillReturnError(errTest)
+		mock.ExpectPrepare(expectedQuery).WillReturnError(errTest)
 		mock.ExpectRollback()
 
 		err := strg.UpdateOrdersBatch(context.Background(), testOrders)
@@ -230,7 +232,7 @@ func TestOrderStorage_UpdateOrdersBatch(t *testing.T) {
 
 	t.Run("exec error", func(t *testing.T) {
 		mock.ExpectBegin()
-		mockStmt := mock.ExpectPrepare("UPDATE orders")
+		mockStmt := mock.ExpectPrepare(expectedQuery)
 
 		mockStmt.ExpectExec().WithArgs(testOrders[0].Status, testOrders[0].Accrual, testOrders[0].Number).WillReturnError(errTest)
 

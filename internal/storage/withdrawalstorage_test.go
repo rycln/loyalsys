@@ -2,12 +2,14 @@ package storage
 
 import (
 	"context"
+	"regexp"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -20,9 +22,7 @@ var testProcessedAt = time.Now().String()
 
 func TestWithdrawalStorage_GetWithdrawalsByUserID(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	strg := NewWithdrawalStorage(db)
@@ -35,10 +35,12 @@ func TestWithdrawalStorage_GetWithdrawalsByUserID(t *testing.T) {
 		ProcessedAt: testProcessedAt,
 	}
 
+	expectedQuery := regexp.QuoteMeta(sqlGetWithdrawalsByUserID)
+
 	t.Run("valid test", func(t *testing.T) {
 		rows := mock.NewRows([]string{"id", "order", "sum", "processed_at"}).
 			AddRow(testWithdrawal.ID, testWithdrawal.Order, testWithdrawal.Sum, testWithdrawal.ProcessedAt)
-		mock.ExpectQuery("SELECT id, order, sum, processed_at FROM withdrawals").WithArgs(testUserID).WillReturnRows(rows)
+		mock.ExpectQuery(expectedQuery).WithArgs(testUserID).WillReturnRows(rows)
 
 		withdrawalsDB, err := strg.GetWithdrawalsByUserID(context.Background(), testUserID)
 		assert.NoError(t, err)
@@ -47,7 +49,7 @@ func TestWithdrawalStorage_GetWithdrawalsByUserID(t *testing.T) {
 	})
 
 	t.Run("some error", func(t *testing.T) {
-		mock.ExpectQuery("SELECT id, order, sum, processed_at FROM withdrawals").WithArgs(testUserID).WillReturnError(errTest)
+		mock.ExpectQuery(expectedQuery).WithArgs(testUserID).WillReturnError(errTest)
 
 		_, err := strg.GetWithdrawalsByUserID(context.Background(), testUserID)
 		assert.Error(t, err)
@@ -56,7 +58,7 @@ func TestWithdrawalStorage_GetWithdrawalsByUserID(t *testing.T) {
 
 	t.Run("empty response", func(t *testing.T) {
 		rows := mock.NewRows([]string{"id", "order", "sum", "processed_at"})
-		mock.ExpectQuery("SELECT id, order, sum, processed_at FROM withdrawals").WithArgs(testUserID).WillReturnRows(rows)
+		mock.ExpectQuery(expectedQuery).WithArgs(testUserID).WillReturnRows(rows)
 
 		_, err := strg.GetWithdrawalsByUserID(context.Background(), testUserID)
 		assert.ErrorIs(t, err, ErrNoWithdrawal)
