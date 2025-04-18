@@ -27,7 +27,7 @@ func TestBalanceStorage_GetBalanceByUserID(t *testing.T) {
 	expectedQuery := regexp.QuoteMeta(sqlGetBalanceByUserID)
 
 	t.Run("valid test", func(t *testing.T) {
-		rows := mock.NewRows([]string{"current", "withdrawn"}).AddRow(testBalance.Current, testBalance.Withdrawn)
+		rows := mock.NewRows([]string{"accrual", "withdrawn"}).AddRow(testBalance.Current+testBalance.Withdrawn, testBalance.Withdrawn)
 		mock.ExpectQuery(expectedQuery).WithArgs(testBalance.UserID).WillReturnRows(rows)
 
 		balance, err := strg.GetBalanceByUserID(context.Background(), testUserID)

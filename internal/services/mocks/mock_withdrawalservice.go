@@ -35,11 +35,25 @@ func (m *MockwithdrawalStorager) EXPECT() *MockwithdrawalStoragerMockRecorder {
 	return m.recorder
 }
 
+// AddWithdrawal mocks base method.
+func (m *MockwithdrawalStorager) AddWithdrawal(arg0 context.Context, arg1 *models.Withdrawal) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddWithdrawal", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddWithdrawal indicates an expected call of AddWithdrawal.
+func (mr *MockwithdrawalStoragerMockRecorder) AddWithdrawal(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddWithdrawal", reflect.TypeOf((*MockwithdrawalStorager)(nil).AddWithdrawal), arg0, arg1)
+}
+
 // GetWithdrawalsByUserID mocks base method.
-func (m *MockwithdrawalStorager) GetWithdrawalsByUserID(arg0 context.Context, arg1 models.UserID) ([]*models.WithdrawalDB, error) {
+func (m *MockwithdrawalStorager) GetWithdrawalsByUserID(arg0 context.Context, arg1 models.UserID) ([]*models.Withdrawal, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWithdrawalsByUserID", arg0, arg1)
-	ret0, _ := ret[0].([]*models.WithdrawalDB)
+	ret0, _ := ret[0].([]*models.Withdrawal)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -48,4 +62,42 @@ func (m *MockwithdrawalStorager) GetWithdrawalsByUserID(arg0 context.Context, ar
 func (mr *MockwithdrawalStoragerMockRecorder) GetWithdrawalsByUserID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalsByUserID", reflect.TypeOf((*MockwithdrawalStorager)(nil).GetWithdrawalsByUserID), arg0, arg1)
+}
+
+// MockbalanceServicer is a mock of balanceServicer interface.
+type MockbalanceServicer struct {
+	ctrl     *gomock.Controller
+	recorder *MockbalanceServicerMockRecorder
+}
+
+// MockbalanceServicerMockRecorder is the mock recorder for MockbalanceServicer.
+type MockbalanceServicerMockRecorder struct {
+	mock *MockbalanceServicer
+}
+
+// NewMockbalanceServicer creates a new mock instance.
+func NewMockbalanceServicer(ctrl *gomock.Controller) *MockbalanceServicer {
+	mock := &MockbalanceServicer{ctrl: ctrl}
+	mock.recorder = &MockbalanceServicerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockbalanceServicer) EXPECT() *MockbalanceServicerMockRecorder {
+	return m.recorder
+}
+
+// GetUserBalance mocks base method.
+func (m *MockbalanceServicer) GetUserBalance(arg0 context.Context, arg1 models.UserID) (*models.Balance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserBalance", arg0, arg1)
+	ret0, _ := ret[0].(*models.Balance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserBalance indicates an expected call of GetUserBalance.
+func (mr *MockbalanceServicerMockRecorder) GetUserBalance(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserBalance", reflect.TypeOf((*MockbalanceServicer)(nil).GetUserBalance), arg0, arg1)
 }

@@ -14,6 +14,7 @@ const (
 	testKey          = "secret_key"
 	testTimeout      = time.Duration(5) * time.Second
 	testJWTString    = "abc.def.ghi"
+	validLuhnString  = "4512812345678909"
 )
 
 var (

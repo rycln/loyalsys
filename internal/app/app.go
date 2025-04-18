@@ -81,16 +81,17 @@ func New() (*App, error) {
 	passwordStrategy := password.NewBCryptHasher()
 	userService := services.NewUserService(userStrg, passwordStrategy)
 	orderService := services.NewOrderService(orderStrg)
-	withdrawalService := services.NewWithdrawalService(withdrawalStrg)
 	balanceService := services.NewBalanceService(balanceStrg)
+	withdrawalService := services.NewWithdrawalService(withdrawalStrg, balanceService)
 	jwtService := services.NewJWTService(cfg.Key)
 
 	registerHandler := handlers.NewRegisterHandler(userService, jwtService)
 	loginHandler := handlers.NewLoginHandler(userService, jwtService)
 	postOrderHandler := handlers.NewPostOrderHandler(orderService, jwtService)
 	getOrdersHandler := handlers.NewGetOrdersHandler(orderService, jwtService)
-	getWithdrawalsHandler := handlers.NewGetWithdrawalsHandler(withdrawalService, jwtService)
 	getBalanceHandler := handlers.NewGetBalanceHandler(balanceService, jwtService)
+	postWithdrawalHandler := handlers.NewPostWithdrawalHandler(withdrawalService, jwtService)
+	getWithdrawalsHandler := handlers.NewGetWithdrawalsHandler(withdrawalService, jwtService)
 
 	app := fiber.New()
 	app.Use(fiberzap.New(fiberzap.Config{
@@ -106,6 +107,7 @@ func New() (*App, error) {
 	app.Post("/api/user/orders", middleware.ContentTypeChecker("text/plain"), timeout.NewWithContext(postOrderHandler, cfg.Timeout))
 	app.Get("/api/user/orders", timeout.NewWithContext(getOrdersHandler, cfg.Timeout))
 	app.Get("/api/user/balance", timeout.NewWithContext(getBalanceHandler, cfg.Timeout))
+	app.Post("/api/user/balance/withdraw", timeout.NewWithContext(postWithdrawalHandler, cfg.Timeout))
 	app.Get("/api/user/withdrawals", timeout.NewWithContext(getWithdrawalsHandler, cfg.Timeout))
 
 	return &App{

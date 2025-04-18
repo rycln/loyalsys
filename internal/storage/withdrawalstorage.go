@@ -17,15 +17,23 @@ func NewWithdrawalStorage(db *sql.DB) *WithdrawalStorage {
 	}
 }
 
-func (s *WithdrawalStorage) GetWithdrawalsByUserID(ctx context.Context, uid models.UserID) ([]*models.WithdrawalDB, error) {
+func (s *WithdrawalStorage) AddWithdrawal(ctx context.Context, withdrawal *models.Withdrawal) error {
+	_, err := s.db.ExecContext(ctx, sqlAddWithdrawal, withdrawal.Order, withdrawal.UserID, withdrawal.Sum)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WithdrawalStorage) GetWithdrawalsByUserID(ctx context.Context, uid models.UserID) ([]*models.Withdrawal, error) {
 	rows, err := s.db.QueryContext(ctx, sqlGetWithdrawalsByUserID, uid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var withdrawals []*models.WithdrawalDB
+	var withdrawals []*models.Withdrawal
 	for rows.Next() {
-		var withdrawal models.WithdrawalDB
+		var withdrawal models.Withdrawal
 		withdrawal.UserID = uid
 		err = rows.Scan(&withdrawal.ID, &withdrawal.Order, &withdrawal.Sum, &withdrawal.ProcessedAt)
 		if err != nil {

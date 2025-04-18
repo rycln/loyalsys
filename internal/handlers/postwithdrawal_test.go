@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http/httptest"
 	"testing"
@@ -14,49 +15,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPostOrderHandler_handle(t *testing.T) {
+func TestPostWithdrawalHandler_handle(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mService := mocks.NewMockpostOrderServicer(ctrl)
-	mJWT := mocks.NewMockpostOrderJWT(ctrl)
+	mService := mocks.NewMockpostWithdrawalServicer(ctrl)
+	mJWT := mocks.NewMockpostWithdrawalJWT(ctrl)
 
-	postOrderHandler := NewPostOrderHandler(mService, mJWT)
+	postWithdrawalHandler := NewPostWithdrawalHandler(mService, mJWT)
 
 	app := fiber.New()
-	app.Post("/", postOrderHandler)
+	app.Post("/", postWithdrawalHandler)
+
+	withdrawal := &models.Withdrawal{
+		Order:  validLuhnString,
+		UserID: testUserID,
+		Sum:    10,
+	}
+	testWithdrawalsJSON, err := json.Marshal(withdrawal)
+	require.NoError(t, err)
 
 	t.Run("valid test", func(t *testing.T) {
-		order := &models.Order{
-			Number: validLuhnString,
-			UserID: testUserID,
-		}
 		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
-		mService.EXPECT().SaveOrder(gomock.Any(), order).Return(nil)
+		mService.EXPECT().WithdrawalProcessing(gomock.Any(), withdrawal).Return(nil)
 
-		bodyReader := bytes.NewReader([]byte(validLuhnString))
-		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
-		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
-
-		res, err := app.Test(request, -1)
-		require.NoError(t, err)
-		defer res.Body.Close()
-
-		assert.Equal(t, fiber.StatusAccepted, res.StatusCode)
-	})
-
-	t.Run("order exists", func(t *testing.T) {
-		order := &models.Order{
-			Number: validLuhnString,
-			UserID: testUserID,
-		}
-
-		mErr := mocks.NewMockerrOrderExists(ctrl)
-		mErr.EXPECT().IsErrOrderExists().Return(true)
-		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
-		mService.EXPECT().SaveOrder(gomock.Any(), order).Return(mErr)
-
-		bodyReader := bytes.NewReader([]byte(validLuhnString))
+		bodyReader := bytes.NewReader([]byte(testWithdrawalsJSON))
 		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
 
@@ -67,59 +50,10 @@ func TestPostOrderHandler_handle(t *testing.T) {
 		assert.Equal(t, fiber.StatusOK, res.StatusCode)
 	})
 
-	t.Run("wrong order number", func(t *testing.T) {
-		order := &models.Order{
-			Number: "12345",
-			UserID: testUserID,
-		}
+	t.Run("jwt error", func(t *testing.T) {
+		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(models.UserID(0), errTest)
 
-		mErr := mocks.NewMockerrWrongNum(ctrl)
-		mErr.EXPECT().IsErrWrongNum().Return(true)
-		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
-		mService.EXPECT().SaveOrder(gomock.Any(), order).Return(mErr)
-
-		bodyReader := bytes.NewReader([]byte(order.Number))
-		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
-		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
-
-		res, err := app.Test(request, -1)
-		require.NoError(t, err)
-		defer res.Body.Close()
-
-		assert.Equal(t, fiber.StatusUnprocessableEntity, res.StatusCode)
-	})
-
-	t.Run("order conflict", func(t *testing.T) {
-		order := &models.Order{
-			Number: validLuhnString,
-			UserID: testUserID,
-		}
-
-		mErr := mocks.NewMockerrOrderConflict(ctrl)
-		mErr.EXPECT().IsErrOrderConflict().Return(true)
-		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
-		mService.EXPECT().SaveOrder(gomock.Any(), order).Return(mErr)
-
-		bodyReader := bytes.NewReader([]byte(validLuhnString))
-		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
-		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
-
-		res, err := app.Test(request, -1)
-		require.NoError(t, err)
-		defer res.Body.Close()
-
-		assert.Equal(t, fiber.StatusConflict, res.StatusCode)
-	})
-
-	t.Run("some error", func(t *testing.T) {
-		order := &models.Order{
-			Number: validLuhnString,
-			UserID: testUserID,
-		}
-		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
-		mService.EXPECT().SaveOrder(gomock.Any(), order).Return(errTest)
-
-		bodyReader := bytes.NewReader([]byte(validLuhnString))
+		bodyReader := bytes.NewReader([]byte(testWithdrawalsJSON))
 		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
 
@@ -130,10 +64,61 @@ func TestPostOrderHandler_handle(t *testing.T) {
 		assert.Equal(t, fiber.StatusInternalServerError, res.StatusCode)
 	})
 
-	t.Run("jwt error", func(t *testing.T) {
-		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(models.UserID(0), errTest)
+	t.Run("wrong json body", func(t *testing.T) {
+		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
 
-		bodyReader := bytes.NewReader([]byte(validLuhnString))
+		bodyReader := bytes.NewReader([]byte("wrong json"))
+		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
+
+		res, err := app.Test(request, -1)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+	})
+
+	t.Run("not enough currency error", func(t *testing.T) {
+		mErr := mocks.NewMockerrNotEnoughCurrency(ctrl)
+
+		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
+		mErr.EXPECT().IsErrNotEnoughCurrency().Return(true)
+		mService.EXPECT().WithdrawalProcessing(gomock.Any(), withdrawal).Return(mErr)
+
+		bodyReader := bytes.NewReader([]byte(testWithdrawalsJSON))
+		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
+
+		res, err := app.Test(request, -1)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, fiber.StatusPaymentRequired, res.StatusCode)
+	})
+
+	t.Run("luhn validation error", func(t *testing.T) {
+		mErr := mocks.NewMockerrWrongOrderNum(ctrl)
+
+		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
+		mErr.EXPECT().IsErrWrongOrderNum().Return(true)
+		mService.EXPECT().WithdrawalProcessing(gomock.Any(), withdrawal).Return(mErr)
+
+		bodyReader := bytes.NewReader([]byte(testWithdrawalsJSON))
+		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
+
+		res, err := app.Test(request, -1)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, fiber.StatusUnprocessableEntity, res.StatusCode)
+	})
+
+	t.Run("some error", func(t *testing.T) {
+		mJWT.EXPECT().ParseIDFromAuthHeader(fmt.Sprintf("Bearer %s", testJWTString)).Return(testUserID, nil)
+		mService.EXPECT().WithdrawalProcessing(gomock.Any(), withdrawal).Return(errTest)
+
+		bodyReader := bytes.NewReader([]byte(testWithdrawalsJSON))
 		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testJWTString))
 

@@ -27,7 +27,7 @@ func TestWithdrawalStorage_GetWithdrawalsByUserID(t *testing.T) {
 
 	strg := NewWithdrawalStorage(db)
 
-	testWithdrawal := &models.WithdrawalDB{
+	testWithdrawal := &models.Withdrawal{
 		ID:          testWithdrawalID,
 		Order:       testWithdrawalOrder,
 		UserID:      testUserID,
@@ -62,6 +62,38 @@ func TestWithdrawalStorage_GetWithdrawalsByUserID(t *testing.T) {
 
 		_, err := strg.GetWithdrawalsByUserID(context.Background(), testUserID)
 		assert.ErrorIs(t, err, ErrNoWithdrawal)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestWithdrawalStorage_AddWithdrawal(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	strg := NewWithdrawalStorage(db)
+
+	testWithdrawal := &models.Withdrawal{
+		Order:  testWithdrawalOrder,
+		UserID: testUserID,
+		Sum:    testWithdrawalSum,
+	}
+
+	expectedQuery := regexp.QuoteMeta(sqlAddWithdrawal)
+
+	t.Run("valid test", func(t *testing.T) {
+		mock.ExpectExec(expectedQuery).WithArgs(testWithdrawal.Order, testWithdrawal.UserID, testWithdrawal.Sum).WillReturnResult(sqlmock.NewResult(1, 1))
+
+		err := strg.AddWithdrawal(context.Background(), testWithdrawal)
+		assert.NoError(t, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("some error", func(t *testing.T) {
+		mock.ExpectExec(expectedQuery).WithArgs(testWithdrawal.Order, testWithdrawal.UserID, testWithdrawal.Sum).WillReturnError(errTest)
+
+		err := strg.AddWithdrawal(context.Background(), testWithdrawal)
+		assert.Error(t, err)
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 }

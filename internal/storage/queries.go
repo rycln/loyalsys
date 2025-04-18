@@ -71,9 +71,14 @@ const sqlGetWithdrawalsByUserID = `
 
 const sqlGetBalanceByUserID = `
 	SELECT 
-		COALESCE(SUM(orders.accrual), 0) AS current, 
+		COALESCE(SUM(orders.accrual), 0) AS accrual, 
 		COALESCE(SUM(withdrawals.sum), 0) AS withdrawn 
 	FROM orders 
 	FULL JOIN withdrawals ON orders.user_id = withdrawals.user_id 
 	WHERE orders.user_id = $1 OR withdrawals.user_id = $1
+`
+
+const sqlAddWithdrawal = `
+	INSERT INTO withdrawals (order, user_id, sum) 
+	VALUES ($1, $2, $3)
 `

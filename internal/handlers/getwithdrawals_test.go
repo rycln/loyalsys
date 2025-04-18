@@ -29,7 +29,7 @@ func TestGetWithdrawalsHandler_handle(t *testing.T) {
 	app.Get("/", getWithdrawalsHandler)
 
 	t.Run("valid test", func(t *testing.T) {
-		testWithdrawals := []*models.WithdrawalDB{
+		testWithdrawals := []*models.Withdrawal{
 			{
 				ID:          1,
 				Order:       "123",

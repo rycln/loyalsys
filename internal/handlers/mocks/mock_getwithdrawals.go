@@ -36,10 +36,10 @@ func (m *MockgetWithdrawalsServicer) EXPECT() *MockgetWithdrawalsServicerMockRec
 }
 
 // GetUserWithdrawals mocks base method.
-func (m *MockgetWithdrawalsServicer) GetUserWithdrawals(arg0 context.Context, arg1 models.UserID) ([]*models.WithdrawalDB, error) {
+func (m *MockgetWithdrawalsServicer) GetUserWithdrawals(arg0 context.Context, arg1 models.UserID) ([]*models.Withdrawal, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserWithdrawals", arg0, arg1)
-	ret0, _ := ret[0].([]*models.WithdrawalDB)
+	ret0, _ := ret[0].([]*models.Withdrawal)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

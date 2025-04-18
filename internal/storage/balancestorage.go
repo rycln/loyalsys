@@ -19,11 +19,16 @@ func NewBalanceStorage(db *sql.DB) *BalanceStorage {
 
 func (s *BalanceStorage) GetBalanceByUserID(ctx context.Context, uid models.UserID) (*models.Balance, error) {
 	row := s.db.QueryRowContext(ctx, sqlGetBalanceByUserID, uid)
-	var balance models.Balance
-	balance.UserID = uid
-	err := row.Scan(&balance.Current, &balance.Withdrawn)
+	var totalAccrual, totalWithdrawn float64
+	err := row.Scan(&totalAccrual, &totalWithdrawn)
 	if err != nil {
 		return nil, err
 	}
-	return &balance, nil
+	current := totalAccrual - totalWithdrawn
+	balance := &models.Balance{
+		UserID:    uid,
+		Current:   current,
+		Withdrawn: totalWithdrawn,
+	}
+	return balance, nil
 }

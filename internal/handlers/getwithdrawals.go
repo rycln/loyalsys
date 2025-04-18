@@ -13,7 +13,7 @@ import (
 //go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
 
 type getWithdrawalsServicer interface {
-	GetUserWithdrawals(context.Context, models.UserID) ([]*models.WithdrawalDB, error)
+	GetUserWithdrawals(context.Context, models.UserID) ([]*models.Withdrawal, error)
 }
 
 type getWithdrawalsJWT interface {
