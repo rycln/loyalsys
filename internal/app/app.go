@@ -65,6 +65,7 @@ func New() (*App, error) {
 
 	userStrg := storage.NewUserStorage(database)
 	orderStrg := storage.NewOrderStorage(database)
+	withdrawalStrg := storage.NewWithdrawalStorage(database)
 
 	restyClient := resty.New()
 	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
@@ -79,12 +80,14 @@ func New() (*App, error) {
 	passwordStrategy := password.NewBCryptHasher()
 	userService := services.NewUserService(userStrg, passwordStrategy)
 	orderService := services.NewOrderService(orderStrg)
+	withdrawalService := services.NewWithdrawalService(withdrawalStrg)
 	jwtService := services.NewJWTService(cfg.Key)
 
 	registerHandler := handlers.NewRegisterHandler(userService, jwtService)
 	loginHandler := handlers.NewLoginHandler(userService, jwtService)
 	postOrderHandler := handlers.NewPostOrderHandler(orderService, jwtService)
 	getOrdersHandler := handlers.NewGetOrdersHandler(orderService, jwtService)
+	getWithdrawalsHandler := handlers.NewGetWithdrawalsHandler(withdrawalService, jwtService)
 
 	app := fiber.New()
 	app.Use(fiberzap.New(fiberzap.Config{
@@ -99,6 +102,7 @@ func New() (*App, error) {
 	}))
 	app.Post("/api/user/orders", middleware.ContentTypeChecker("text/plain"), timeout.NewWithContext(postOrderHandler, cfg.Timeout))
 	app.Get("/api/user/orders", timeout.NewWithContext(getOrdersHandler, cfg.Timeout))
+	app.Get("/api/user/withdrawals", timeout.NewWithContext(getWithdrawalsHandler, cfg.Timeout))
 
 	return &App{
 		App:          app,
@@ -144,9 +148,9 @@ func (app *App) shutdown(ctx context.Context) error {
 	close(app.workerStopCh)
 
 	select {
-	case <-app.workerDoneCh:
 	case <-ctx.Done():
 		return fmt.Errorf("worker shutdown timeout: %w", ctx.Err())
+	case <-app.workerDoneCh:
 	}
 
 	if err := app.App.Shutdown(); err != nil {

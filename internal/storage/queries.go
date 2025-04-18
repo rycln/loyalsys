@@ -14,4 +14,6 @@ const (
 	sqlUpdateOrdersBatch = "UPDATE orders SET status = $1, accrual = $2 WHERE number = $3"
 
 	sqlGetOrdersByUserID = "SELECT number, status, accrual, created_at FROM orders WHERE user_id = $1 ORDER BY created_at DESC"
+
+	sqlGetWithdrawalsByUserID = "SELECT id, order, sum, processed_at FROM withdrawals WHERE user_id = $1 ORDER BY processed_at DESC"
 )
