@@ -4,6 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/contrib/fiberzap/v2"
@@ -23,15 +29,27 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const shutdownTimeout = 5 * time.Second
+
 type App struct {
 	*fiber.App
+	cfg          *config.Cfg
 	db           *sql.DB
 	workerStopCh chan struct{}
 	workerDoneCh chan struct{}
 }
 
-func New(cfg *config.Cfg) (*App, error) {
-	err := logger.LogInit(cfg.LogLevel)
+func New() (*App, error) {
+	cfg, err := config.NewConfigBuilder().
+		WithFlagParsing().
+		WithEnvParsing().
+		WithDefaultJWTKey().
+		Build()
+	if err != nil {
+		return nil, fmt.Errorf("can't initialize the configuration: %v", err)
+	}
+
+	err = logger.LogInit(cfg.LogLevel)
 	if err != nil {
 		return nil, fmt.Errorf("can't initialize the logger: %v", err)
 	}
@@ -84,13 +102,45 @@ func New(cfg *config.Cfg) (*App, error) {
 
 	return &App{
 		App:          app,
+		cfg:          cfg,
 		db:           database,
 		workerStopCh: stopCh,
 		workerDoneCh: doneCh,
 	}, nil
 }
 
-func (app *App) Shutdown(ctx context.Context) error {
+func (app *App) Run() error {
+	go func() {
+		err := app.Listen(app.cfg.RunAddr)
+		if err != nil {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+
+	<-shutdown
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	err := app.shutdown(ctx)
+	if err != nil {
+		return fmt.Errorf("shutdown error: %v", err)
+	}
+
+	err = app.cleanup()
+	if err != nil {
+		return fmt.Errorf("cleanup error: %v", err)
+	}
+
+	log.Println(strings.TrimPrefix(os.Args[0], "./") + " shutted down gracefully")
+
+	return nil
+}
+
+func (app *App) shutdown(ctx context.Context) error {
 	close(app.workerStopCh)
 
 	select {
@@ -105,7 +155,7 @@ func (app *App) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (app *App) Cleanup() error {
+func (app *App) cleanup() error {
 	defer logger.Log.Sync()
 
 	if err := app.db.Close(); err != nil {
