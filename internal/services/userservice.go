@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 
-	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/models"
 )
 
@@ -14,16 +13,25 @@ type userStorager interface {
 	GetUserByLogin(context.Context, string) (*models.UserDB, error)
 }
 
-type UserService struct {
-	strg userStorager
+type passwordHasher interface {
+	Hash(string) (string, error)
+	Compare(string, string) error
 }
 
-func NewUserService(strg userStorager) *UserService {
-	return &UserService{strg: strg}
+type UserService struct {
+	strg   userStorager
+	hasher passwordHasher
+}
+
+func NewUserService(strg userStorager, hasher passwordHasher) *UserService {
+	return &UserService{
+		strg:   strg,
+		hasher: hasher,
+	}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) (models.UserID, error) {
-	hash, err := auth.HashPassword(user.Password)
+	hash, err := s.hasher.Hash(user.Password)
 	if err != nil {
 		return 0, err
 	}
@@ -43,7 +51,7 @@ func (s *UserService) UserAuth(ctx context.Context, user *models.User) (models.U
 	if err != nil {
 		return 0, err
 	}
-	err = auth.CompareHashAndPassword(userDB.PasswordHash, user.Password)
+	err = s.hasher.Compare(userDB.PasswordHash, user.Password)
 	if err != nil {
 		return 0, err
 	}

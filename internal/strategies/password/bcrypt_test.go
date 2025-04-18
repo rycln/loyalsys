@@ -1,4 +1,4 @@
-package auth
+package password
 
 import (
 	"testing"
@@ -12,31 +12,35 @@ const testPassword = "secret"
 
 var tooBigPassword = string(make([]byte, 100))
 
-func TestHashPassword(t *testing.T) {
+func TestBCrypt_Hash(t *testing.T) {
+	hasher := NewBCryptHasher()
+
 	t.Run("valid test", func(t *testing.T) {
-		hash, err := HashPassword(testPassword)
+		hash, err := hasher.Hash(testPassword)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, hash)
 	})
 
 	t.Run("too big password", func(t *testing.T) {
-		_, err := HashPassword(tooBigPassword)
+		_, err := hasher.Hash(tooBigPassword)
 		assert.Error(t, err)
 	})
 }
 
-func TestCompareHashAndPassword(t *testing.T) {
+func TestBCrypt_Compare(t *testing.T) {
+	hasher := NewBCryptHasher()
+
 	t.Run("valid test", func(t *testing.T) {
 		preHash, err := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.DefaultCost)
 		require.NoError(t, err)
-		err = CompareHashAndPassword(string(preHash), testPassword)
+		err = hasher.Compare(string(preHash), testPassword)
 		assert.NoError(t, err)
 	})
 
 	t.Run("wrong password", func(t *testing.T) {
 		preHash, err := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.DefaultCost)
 		require.NoError(t, err)
-		err = CompareHashAndPassword(string(preHash), "wrong_password")
+		err = hasher.Compare(string(preHash), "wrong_password")
 		assert.ErrorIs(t, err, ErrWrongPassword)
 	})
 }

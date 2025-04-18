@@ -3,15 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/rycln/loyalsys/internal/auth"
-	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
 	"go.uber.org/zap"
 )
 
@@ -21,17 +17,31 @@ type loginServicer interface {
 	UserAuth(context.Context, *models.User) (models.UserID, error)
 }
 
-type LoginHandler struct {
-	loginService loginServicer
-	cfg          *config.Cfg
+type loginJWT interface {
+	NewJWTString(models.UserID) (string, error)
 }
 
-func NewLoginHandler(loginService loginServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
+type LoginHandler struct {
+	loginService loginServicer
+	jwt          loginJWT
+}
+
+func NewLoginHandler(loginService loginServicer, jwt loginJWT) func(*fiber.Ctx) error {
 	h := &LoginHandler{
 		loginService: loginService,
-		cfg:          cfg,
+		jwt:          jwt,
 	}
 	return h.handle
+}
+
+type errNoUser interface {
+	error
+	IsErrNoUser() bool
+}
+
+type errWrongPassword interface {
+	error
+	IsErrWrongPassword() bool
 }
 
 func (h *LoginHandler) handle(c *fiber.Ctx) error {
@@ -48,7 +58,11 @@ func (h *LoginHandler) handle(c *fiber.Ctx) error {
 	}
 
 	uid, err := h.loginService.UserAuth(c.Context(), &user)
-	if errors.Is(err, storage.ErrNoUser) || errors.Is(err, auth.ErrWrongPassword) {
+	if e, ok := err.(errNoUser); ok && e.IsErrNoUser() {
+		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	if e, ok := err.(errWrongPassword); ok && e.IsErrWrongPassword() {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
@@ -57,7 +71,7 @@ func (h *LoginHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	jwt, err := auth.NewJWTString(uid, h.cfg.Key)
+	jwt, err := h.jwt.NewJWTString(uid)
 	if err != nil {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusInternalServerError)
