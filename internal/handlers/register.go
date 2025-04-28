@@ -3,15 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/rycln/loyalsys/internal/auth"
-	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
 	"go.uber.org/zap"
 )
 
@@ -21,17 +17,26 @@ type regServicer interface {
 	CreateUser(context.Context, *models.User) (models.UserID, error)
 }
 
-type RegisterHandler struct {
-	regService regServicer
-	cfg        *config.Cfg
+type regJWT interface {
+	NewJWTString(models.UserID) (string, error)
 }
 
-func NewRegisterHandler(regService regServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
+type RegisterHandler struct {
+	regService regServicer
+	jwt        regJWT
+}
+
+func NewRegisterHandler(regService regServicer, jwt regJWT) func(*fiber.Ctx) error {
 	h := &RegisterHandler{
 		regService: regService,
-		cfg:        cfg,
+		jwt:        jwt,
 	}
 	return h.handle
+}
+
+type errLoginConflict interface {
+	error
+	IsErrLoginConflict() bool
 }
 
 func (h *RegisterHandler) handle(c *fiber.Ctx) error {
@@ -48,7 +53,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 	}
 
 	uid, err := h.regService.CreateUser(c.Context(), &user)
-	if errors.Is(err, storage.ErrLoginConflict) {
+	if e, ok := err.(errLoginConflict); ok && e.IsErrLoginConflict() {
 		return c.SendStatus(fiber.StatusConflict)
 	}
 	if err != nil {
@@ -56,7 +61,7 @@ func (h *RegisterHandler) handle(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	jwt, err := auth.NewJWTString(uid, h.cfg.Key)
+	jwt, err := h.jwt.NewJWTString(uid)
 	if err != nil {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusInternalServerError)

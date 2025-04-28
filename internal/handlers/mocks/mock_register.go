@@ -49,3 +49,92 @@ func (mr *MockregServicerMockRecorder) CreateUser(arg0, arg1 interface{}) *gomoc
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockregServicer)(nil).CreateUser), arg0, arg1)
 }
+
+// MockregJWT is a mock of regJWT interface.
+type MockregJWT struct {
+	ctrl     *gomock.Controller
+	recorder *MockregJWTMockRecorder
+}
+
+// MockregJWTMockRecorder is the mock recorder for MockregJWT.
+type MockregJWTMockRecorder struct {
+	mock *MockregJWT
+}
+
+// NewMockregJWT creates a new mock instance.
+func NewMockregJWT(ctrl *gomock.Controller) *MockregJWT {
+	mock := &MockregJWT{ctrl: ctrl}
+	mock.recorder = &MockregJWTMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockregJWT) EXPECT() *MockregJWTMockRecorder {
+	return m.recorder
+}
+
+// NewJWTString mocks base method.
+func (m *MockregJWT) NewJWTString(arg0 models.UserID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewJWTString", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewJWTString indicates an expected call of NewJWTString.
+func (mr *MockregJWTMockRecorder) NewJWTString(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewJWTString", reflect.TypeOf((*MockregJWT)(nil).NewJWTString), arg0)
+}
+
+// MockerrLoginConflict is a mock of errLoginConflict interface.
+type MockerrLoginConflict struct {
+	ctrl     *gomock.Controller
+	recorder *MockerrLoginConflictMockRecorder
+}
+
+// MockerrLoginConflictMockRecorder is the mock recorder for MockerrLoginConflict.
+type MockerrLoginConflictMockRecorder struct {
+	mock *MockerrLoginConflict
+}
+
+// NewMockerrLoginConflict creates a new mock instance.
+func NewMockerrLoginConflict(ctrl *gomock.Controller) *MockerrLoginConflict {
+	mock := &MockerrLoginConflict{ctrl: ctrl}
+	mock.recorder = &MockerrLoginConflictMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockerrLoginConflict) EXPECT() *MockerrLoginConflictMockRecorder {
+	return m.recorder
+}
+
+// Error mocks base method.
+func (m *MockerrLoginConflict) Error() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockerrLoginConflictMockRecorder) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockerrLoginConflict)(nil).Error))
+}
+
+// IsErrLoginConflict mocks base method.
+func (m *MockerrLoginConflict) IsErrLoginConflict() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsErrLoginConflict")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsErrLoginConflict indicates an expected call of IsErrLoginConflict.
+func (mr *MockerrLoginConflictMockRecorder) IsErrLoginConflict() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsErrLoginConflict", reflect.TypeOf((*MockerrLoginConflict)(nil).IsErrLoginConflict))
+}

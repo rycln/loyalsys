@@ -48,3 +48,194 @@ func (mr *MockpostOrderServicerMockRecorder) SaveOrder(arg0, arg1 interface{}) *
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveOrder", reflect.TypeOf((*MockpostOrderServicer)(nil).SaveOrder), arg0, arg1)
 }
+
+// MockpostOrderJWT is a mock of postOrderJWT interface.
+type MockpostOrderJWT struct {
+	ctrl     *gomock.Controller
+	recorder *MockpostOrderJWTMockRecorder
+}
+
+// MockpostOrderJWTMockRecorder is the mock recorder for MockpostOrderJWT.
+type MockpostOrderJWTMockRecorder struct {
+	mock *MockpostOrderJWT
+}
+
+// NewMockpostOrderJWT creates a new mock instance.
+func NewMockpostOrderJWT(ctrl *gomock.Controller) *MockpostOrderJWT {
+	mock := &MockpostOrderJWT{ctrl: ctrl}
+	mock.recorder = &MockpostOrderJWTMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockpostOrderJWT) EXPECT() *MockpostOrderJWTMockRecorder {
+	return m.recorder
+}
+
+// ParseIDFromAuthHeader mocks base method.
+func (m *MockpostOrderJWT) ParseIDFromAuthHeader(arg0 string) (models.UserID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ParseIDFromAuthHeader", arg0)
+	ret0, _ := ret[0].(models.UserID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ParseIDFromAuthHeader indicates an expected call of ParseIDFromAuthHeader.
+func (mr *MockpostOrderJWTMockRecorder) ParseIDFromAuthHeader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseIDFromAuthHeader", reflect.TypeOf((*MockpostOrderJWT)(nil).ParseIDFromAuthHeader), arg0)
+}
+
+// MockerrOrderExists is a mock of errOrderExists interface.
+type MockerrOrderExists struct {
+	ctrl     *gomock.Controller
+	recorder *MockerrOrderExistsMockRecorder
+}
+
+// MockerrOrderExistsMockRecorder is the mock recorder for MockerrOrderExists.
+type MockerrOrderExistsMockRecorder struct {
+	mock *MockerrOrderExists
+}
+
+// NewMockerrOrderExists creates a new mock instance.
+func NewMockerrOrderExists(ctrl *gomock.Controller) *MockerrOrderExists {
+	mock := &MockerrOrderExists{ctrl: ctrl}
+	mock.recorder = &MockerrOrderExistsMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockerrOrderExists) EXPECT() *MockerrOrderExistsMockRecorder {
+	return m.recorder
+}
+
+// Error mocks base method.
+func (m *MockerrOrderExists) Error() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockerrOrderExistsMockRecorder) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockerrOrderExists)(nil).Error))
+}
+
+// IsErrOrderExists mocks base method.
+func (m *MockerrOrderExists) IsErrOrderExists() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsErrOrderExists")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsErrOrderExists indicates an expected call of IsErrOrderExists.
+func (mr *MockerrOrderExistsMockRecorder) IsErrOrderExists() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsErrOrderExists", reflect.TypeOf((*MockerrOrderExists)(nil).IsErrOrderExists))
+}
+
+// MockerrWrongNum is a mock of errWrongNum interface.
+type MockerrWrongNum struct {
+	ctrl     *gomock.Controller
+	recorder *MockerrWrongNumMockRecorder
+}
+
+// MockerrWrongNumMockRecorder is the mock recorder for MockerrWrongNum.
+type MockerrWrongNumMockRecorder struct {
+	mock *MockerrWrongNum
+}
+
+// NewMockerrWrongNum creates a new mock instance.
+func NewMockerrWrongNum(ctrl *gomock.Controller) *MockerrWrongNum {
+	mock := &MockerrWrongNum{ctrl: ctrl}
+	mock.recorder = &MockerrWrongNumMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockerrWrongNum) EXPECT() *MockerrWrongNumMockRecorder {
+	return m.recorder
+}
+
+// Error mocks base method.
+func (m *MockerrWrongNum) Error() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockerrWrongNumMockRecorder) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockerrWrongNum)(nil).Error))
+}
+
+// IsErrWrongNum mocks base method.
+func (m *MockerrWrongNum) IsErrWrongNum() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsErrWrongNum")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsErrWrongNum indicates an expected call of IsErrWrongNum.
+func (mr *MockerrWrongNumMockRecorder) IsErrWrongNum() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsErrWrongNum", reflect.TypeOf((*MockerrWrongNum)(nil).IsErrWrongNum))
+}
+
+// MockerrOrderConflict is a mock of errOrderConflict interface.
+type MockerrOrderConflict struct {
+	ctrl     *gomock.Controller
+	recorder *MockerrOrderConflictMockRecorder
+}
+
+// MockerrOrderConflictMockRecorder is the mock recorder for MockerrOrderConflict.
+type MockerrOrderConflictMockRecorder struct {
+	mock *MockerrOrderConflict
+}
+
+// NewMockerrOrderConflict creates a new mock instance.
+func NewMockerrOrderConflict(ctrl *gomock.Controller) *MockerrOrderConflict {
+	mock := &MockerrOrderConflict{ctrl: ctrl}
+	mock.recorder = &MockerrOrderConflictMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockerrOrderConflict) EXPECT() *MockerrOrderConflictMockRecorder {
+	return m.recorder
+}
+
+// Error mocks base method.
+func (m *MockerrOrderConflict) Error() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockerrOrderConflictMockRecorder) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockerrOrderConflict)(nil).Error))
+}
+
+// IsErrOrderConflict mocks base method.
+func (m *MockerrOrderConflict) IsErrOrderConflict() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsErrOrderConflict")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsErrOrderConflict indicates an expected call of IsErrOrderConflict.
+func (mr *MockerrOrderConflictMockRecorder) IsErrOrderConflict() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsErrOrderConflict", reflect.TypeOf((*MockerrOrderConflict)(nil).IsErrOrderConflict))
+}

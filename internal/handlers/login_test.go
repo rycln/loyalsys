@@ -8,10 +8,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang/mock/gomock"
-	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/handlers/mocks"
 	"github.com/rycln/loyalsys/internal/models"
-	"github.com/rycln/loyalsys/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,11 +19,12 @@ func TestLoginHandler_handle(t *testing.T) {
 	defer ctrl.Finish()
 
 	mService := mocks.NewMockloginServicer(ctrl)
+	mJWT := mocks.NewMockloginJWT(ctrl)
 
-	lohinHandler := NewLoginHandler(mService, testCfg)
+	loginHandler := NewLoginHandler(mService, mJWT)
 
 	app := fiber.New()
-	app.Post("/", lohinHandler)
+	app.Post("/", loginHandler)
 
 	t.Run("valid test", func(t *testing.T) {
 		testUser := &models.User{
@@ -33,6 +32,7 @@ func TestLoginHandler_handle(t *testing.T) {
 			Password: testUserPassword,
 		}
 		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(testUserID, nil)
+		mJWT.EXPECT().NewJWTString(testUserID).Return(testJWTString, nil)
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)
@@ -46,6 +46,7 @@ func TestLoginHandler_handle(t *testing.T) {
 		assert.Equal(t, fiber.StatusOK, res.StatusCode)
 		assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
 		assert.NotEmpty(t, res.Header.Get("Authorization"))
+		assert.Contains(t, res.Header.Get("Authorization"), testJWTString)
 	})
 
 	t.Run("wrong json body", func(t *testing.T) {
@@ -65,7 +66,10 @@ func TestLoginHandler_handle(t *testing.T) {
 			Login:    testUserLogin,
 			Password: testUserPassword,
 		}
-		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(models.UserID(0), storage.ErrNoUser)
+
+		mErr := mocks.NewMockerrNoUser(ctrl)
+		mErr.EXPECT().IsErrNoUser().Return(true)
+		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(models.UserID(0), mErr)
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)
@@ -84,7 +88,9 @@ func TestLoginHandler_handle(t *testing.T) {
 			Login:    testUserLogin,
 			Password: testUserPassword,
 		}
-		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(models.UserID(0), auth.ErrWrongPassword)
+		mErr := mocks.NewMockerrWrongPassword(ctrl)
+		mErr.EXPECT().IsErrWrongPassword().Return(true)
+		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(models.UserID(0), mErr)
 
 		body, err := json.Marshal(testUser)
 		require.NoError(t, err)
@@ -133,5 +139,25 @@ func TestLoginHandler_handle(t *testing.T) {
 		defer res.Body.Close()
 
 		assert.Equal(t, fiber.StatusBadRequest, res.StatusCode)
+	})
+
+	t.Run("jwt error", func(t *testing.T) {
+		testUser := &models.User{
+			Login:    testUserLogin,
+			Password: testUserPassword,
+		}
+		mService.EXPECT().UserAuth(gomock.Any(), testUser).Return(testUserID, nil)
+		mJWT.EXPECT().NewJWTString(testUserID).Return("", errTest)
+
+		body, err := json.Marshal(testUser)
+		require.NoError(t, err)
+		bodyReader := bytes.NewReader(body)
+		request := httptest.NewRequest(fiber.MethodPost, "/", bodyReader)
+
+		res, err := app.Test(request, -1)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, fiber.StatusInternalServerError, res.StatusCode)
 	})
 }

@@ -9,6 +9,7 @@ import (
 const (
 	testUserID      = models.UserID(1)
 	testOtherUserID = models.UserID(2)
+	validLuhnString = "4512812345678909"
 )
 
 var (
