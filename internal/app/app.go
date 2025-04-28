@@ -18,7 +18,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/timeout"
 	"github.com/rycln/loyalsys/internal/client"
 	"github.com/rycln/loyalsys/internal/config"
-	"github.com/rycln/loyalsys/internal/db"
 	"github.com/rycln/loyalsys/internal/handlers"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/middleware"
@@ -57,10 +56,6 @@ func New() (*App, error) {
 	database, err := storage.NewDB(cfg.DatabaseURI)
 	if err != nil {
 		return nil, fmt.Errorf("can't open database: %v", err)
-	}
-	err = db.RunMigrations(database)
-	if err != nil {
-		return nil, fmt.Errorf("can't apply migrations: %v", err)
 	}
 
 	userStrg := storage.NewUserStorage(database)
