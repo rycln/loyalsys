@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/rycln/loyalsys/internal/logger"
@@ -10,6 +11,8 @@ import (
 )
 
 //go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
+
+var errNoOrderNums = errors.New("nothing to update")
 
 type syncAPI interface {
 	GetOrderFromAccrual(context.Context, string) (*models.OrderAccrual, error)
@@ -61,6 +64,9 @@ func (worker *OrderSyncWorker) Run(stopCh <-chan struct{}) chan struct{} {
 					logger.Log.Info("worker retry after", zap.Duration("duration, sec:", dur))
 					continue
 				}
+				if errors.Is(err, errNoOrderNums) {
+					continue
+				}
 				if err != nil {
 					logger.Log.Debug("worker error", zap.Error(err))
 				}
@@ -72,30 +78,51 @@ func (worker *OrderSyncWorker) Run(stopCh <-chan struct{}) chan struct{} {
 }
 
 func (worker *OrderSyncWorker) updateOrdersBatch(stopCh <-chan struct{}) error {
-	ctxDB, cancelDB := context.WithTimeout(context.Background(), worker.cfg.timeout)
-	defer cancelDB()
-
-	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctxDB)
+	orderNums, err := worker.getOrderNums()
 	if err != nil {
 		return err
-	}
-	if len(orderNums) == 0 {
-		return nil
 	}
 
 	numsChan := orderNumbersGenerator(stopCh, orderNums)
 	resultChans := worker.ordersFanOut(stopCh, numsChan)
 	resultCh := ordersFanIn(stopCh, resultChans)
 
+	updatedOrders, err := updateConsumer(stopCh, resultCh)
+	if err != nil {
+		return err
+	}
+
+	err = worker.updateOrders(updatedOrders)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (worker *OrderSyncWorker) getOrderNums() ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), worker.cfg.timeout)
+	defer cancel()
+
+	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(orderNums) == 0 {
+		return nil, errNoOrderNums
+	}
+	return orderNums, nil
+}
+
+func updateConsumer(stopCh <-chan struct{}, resultCh chan updateOrderResult) ([]*models.OrderDB, error) {
 	var updatedOrders []*models.OrderDB
 
 	for result := range resultCh {
 		select {
 		case <-stopCh:
-			return nil
+			return nil, nil
 		case <-resultCh:
 			if err, ok := result.err.(errRetryAfter); ok && err.IsErrRetryAfter() {
-				return err
+				return nil, err
 			}
 			if result.err != nil {
 				logger.Log.Debug("pipeline error", zap.Error(result.err))
@@ -105,10 +132,14 @@ func (worker *OrderSyncWorker) updateOrdersBatch(stopCh <-chan struct{}) error {
 		}
 	}
 
-	ctxDB, cancelDB = context.WithTimeout(context.Background(), worker.cfg.timeout)
-	defer cancelDB()
+	return updatedOrders, nil
+}
 
-	err = worker.storage.UpdateOrdersBatch(ctxDB, updatedOrders)
+func (worker *OrderSyncWorker) updateOrders(updatedOrders []*models.OrderDB) error {
+	ctx, cancel := context.WithTimeout(context.Background(), worker.cfg.timeout)
+	defer cancel()
+
+	err := worker.storage.UpdateOrdersBatch(ctx, updatedOrders)
 	if err != nil {
 		return err
 	}
