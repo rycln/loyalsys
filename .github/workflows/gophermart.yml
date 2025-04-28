@@ -53,8 +53,7 @@ jobs:
       - name: Migrations
         run: |
           go install github.com/pressly/goose/v3/cmd/goose@v3.24.2
-          export DATABASE_URI="postgresql://postgres:postgres@postgres/praktikum?sslmode=disable"
-          go run ./internal/db/migrations.go
+          go run ./cmd/migrator -d="postgresql://postgres:postgres@postgres/praktikum?sslmode=disable"
 
       - name: Test
         run: |
