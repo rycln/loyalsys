@@ -7,8 +7,8 @@ var ErrInvalidUser = errors.New("invalid user")
 type UserID int64
 
 type User struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
+	Login    string `json:"login,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 func (u *User) Validate() error {
