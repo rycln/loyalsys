@@ -63,3 +63,69 @@ func (mr *MockorderStoragerMockRecorder) GetOrderByNum(arg0, arg1 interface{}) *
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderByNum", reflect.TypeOf((*MockorderStorager)(nil).GetOrderByNum), arg0, arg1)
 }
+
+// GetOrdersByUserID mocks base method.
+func (m *MockorderStorager) GetOrdersByUserID(arg0 context.Context, arg1 models.UserID) ([]*models.OrderDB, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrdersByUserID", arg0, arg1)
+	ret0, _ := ret[0].([]*models.OrderDB)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrdersByUserID indicates an expected call of GetOrdersByUserID.
+func (mr *MockorderStoragerMockRecorder) GetOrdersByUserID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserID", reflect.TypeOf((*MockorderStorager)(nil).GetOrdersByUserID), arg0, arg1)
+}
+
+// MockerrNoOrder is a mock of errNoOrder interface.
+type MockerrNoOrder struct {
+	ctrl     *gomock.Controller
+	recorder *MockerrNoOrderMockRecorder
+}
+
+// MockerrNoOrderMockRecorder is the mock recorder for MockerrNoOrder.
+type MockerrNoOrderMockRecorder struct {
+	mock *MockerrNoOrder
+}
+
+// NewMockerrNoOrder creates a new mock instance.
+func NewMockerrNoOrder(ctrl *gomock.Controller) *MockerrNoOrder {
+	mock := &MockerrNoOrder{ctrl: ctrl}
+	mock.recorder = &MockerrNoOrderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockerrNoOrder) EXPECT() *MockerrNoOrderMockRecorder {
+	return m.recorder
+}
+
+// Error mocks base method.
+func (m *MockerrNoOrder) Error() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Error")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Error indicates an expected call of Error.
+func (mr *MockerrNoOrderMockRecorder) Error() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Error", reflect.TypeOf((*MockerrNoOrder)(nil).Error))
+}
+
+// IsErrNoOrder mocks base method.
+func (m *MockerrNoOrder) IsErrNoOrder() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsErrNoOrder")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsErrNoOrder indicates an expected call of IsErrNoOrder.
+func (mr *MockerrNoOrderMockRecorder) IsErrNoOrder() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsErrNoOrder", reflect.TypeOf((*MockerrNoOrder)(nil).IsErrNoOrder))
+}
