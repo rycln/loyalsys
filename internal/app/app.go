@@ -16,7 +16,7 @@ import (
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
-	"github.com/rycln/loyalsys/internal/api"
+	"github.com/rycln/loyalsys/internal/client"
 	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/db"
 	"github.com/rycln/loyalsys/internal/handlers"
@@ -69,7 +69,7 @@ func New() (*App, error) {
 	balanceStrg := storage.NewBalanceStorage(database)
 
 	restyClient := resty.New()
-	client := api.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
+	client := client.NewOrderUpdateClient(restyClient, cfg.AccrualAddr, cfg.Timeout)
 	workerCfg := worker.NewSyncWorkerConfigBuilder().
 		WithTimeout(cfg.Timeout).
 		Build()
