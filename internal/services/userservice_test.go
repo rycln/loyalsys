@@ -6,19 +6,20 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/rycln/loyalsys/internal/auth"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/rycln/loyalsys/internal/services/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-const testPasswordHash = "abcdefg"
+var tooLargePassword = string(make([]byte, 100))
 
 func TestUserService_CreateUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mStrg := mocks.NewMockuserStorager(ctrl)
-	mHasher := mocks.NewMockpasswordHasher(ctrl)
 
 	t.Run("valid test", func(t *testing.T) {
 		testUser := &models.User{
@@ -27,9 +28,8 @@ func TestUserService_CreateUser(t *testing.T) {
 		}
 
 		mStrg.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(testUserID, nil)
-		mHasher.EXPECT().Hash(testUser.Password).Return(testPasswordHash, nil)
 
-		s := NewUserService(mStrg, mHasher)
+		s := NewUserService(mStrg)
 		uid, err := s.CreateUser(context.Background(), testUser)
 		assert.NoError(t, err)
 		assert.Equal(t, testUserID, uid)
@@ -42,9 +42,8 @@ func TestUserService_CreateUser(t *testing.T) {
 		}
 
 		mStrg.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(models.UserID(0), errTest)
-		mHasher.EXPECT().Hash(testUser.Password).Return(testPasswordHash, nil)
 
-		s := NewUserService(mStrg, mHasher)
+		s := NewUserService(mStrg)
 		_, err := s.CreateUser(context.Background(), testUser)
 		assert.Error(t, err)
 	})
@@ -52,12 +51,10 @@ func TestUserService_CreateUser(t *testing.T) {
 	t.Run("password hash failed", func(t *testing.T) {
 		testUser := &models.User{
 			Login:    "test",
-			Password: "wrong_password",
+			Password: tooLargePassword,
 		}
 
-		mHasher.EXPECT().Hash(testUser.Password).Return("", errTest)
-
-		s := NewUserService(mStrg, mHasher)
+		s := NewUserService(mStrg)
 		_, err := s.CreateUser(context.Background(), testUser)
 		assert.Error(t, err)
 	})
@@ -68,7 +65,6 @@ func TestUserService_UserAuth(t *testing.T) {
 	defer ctrl.Finish()
 
 	mStrg := mocks.NewMockuserStorager(ctrl)
-	mHasher := mocks.NewMockpasswordHasher(ctrl)
 
 	t.Run("valid test", func(t *testing.T) {
 		testUser := &models.User{
@@ -76,15 +72,15 @@ func TestUserService_UserAuth(t *testing.T) {
 			Password: "secret",
 		}
 
+		testPasswordHash, err := auth.HashPassword(testUser.Password)
+		require.NoError(t, err)
 		testUserDB := &models.UserDB{
 			ID:           testUserID,
 			PasswordHash: testPasswordHash,
 		}
-
 		mStrg.EXPECT().GetUserByLogin(context.Background(), testUser.Login).Return(testUserDB, nil)
-		mHasher.EXPECT().Compare(testUserDB.PasswordHash, testUser.Password).Return(nil)
 
-		s := NewUserService(mStrg, mHasher)
+		s := NewUserService(mStrg)
 		uid, err := s.UserAuth(context.Background(), testUser)
 		assert.NoError(t, err)
 		assert.Equal(t, testUserID, uid)
@@ -98,7 +94,7 @@ func TestUserService_UserAuth(t *testing.T) {
 
 		mStrg.EXPECT().GetUserByLogin(context.Background(), testUser.Login).Return(nil, errors.New("test err"))
 
-		s := NewUserService(mStrg, mHasher)
+		s := NewUserService(mStrg)
 		_, err := s.UserAuth(context.Background(), testUser)
 		assert.Error(t, err)
 	})
@@ -113,9 +109,8 @@ func TestUserService_UserAuth(t *testing.T) {
 			PasswordHash: "wrong hash",
 		}
 		mStrg.EXPECT().GetUserByLogin(context.Background(), testUser.Login).Return(testUserDB, nil)
-		mHasher.EXPECT().Compare(testUserDB.PasswordHash, testUser.Password).Return(errTest)
 
-		s := NewUserService(mStrg, mHasher)
+		s := NewUserService(mStrg)
 		_, err := s.UserAuth(context.Background(), testUser)
 		assert.Error(t, err)
 	})

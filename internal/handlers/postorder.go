@@ -2,10 +2,15 @@ package handlers
 
 import (
 	"context"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/rycln/loyalsys/internal/auth"
+	"github.com/rycln/loyalsys/internal/config"
 	"github.com/rycln/loyalsys/internal/logger"
 	"github.com/rycln/loyalsys/internal/models"
+	"github.com/rycln/loyalsys/internal/services"
 	"go.uber.org/zap"
 )
 
@@ -15,40 +20,25 @@ type postOrderServicer interface {
 	SaveOrder(context.Context, *models.Order) error
 }
 
-type postOrderJWT interface {
-	ParseIDFromAuthHeader(string) (models.UserID, error)
-}
-
 type PostOrderHandler struct {
 	postOrderService postOrderServicer
-	jwt              postOrderJWT
+	cfg              *config.Cfg
 }
 
-func NewPostOrderHandler(postOrderService postOrderServicer, jwt postOrderJWT) func(*fiber.Ctx) error {
+func NewPostOrderHandler(postOrderService postOrderServicer, cfg *config.Cfg) func(*fiber.Ctx) error {
 	h := &PostOrderHandler{
 		postOrderService: postOrderService,
-		jwt:              jwt,
+		cfg:              cfg,
 	}
 	return h.handle
 }
 
-type errOrderExists interface {
-	error
-	IsErrOrderExists() bool
-}
-
-type errWrongNum interface {
-	error
-	IsErrWrongNum() bool
-}
-
-type errOrderConflict interface {
-	error
-	IsErrOrderConflict() bool
-}
-
 func (h *PostOrderHandler) handle(c *fiber.Ctx) error {
-	uid, err := h.jwt.ParseIDFromAuthHeader(c.Get("Authorization"))
+	token, ok := c.Locals("user").(*jwt.Token)
+	if !ok {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	uid, err := auth.ParseIDFromJWT(token)
 	if err != nil {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusInternalServerError)
@@ -59,15 +49,15 @@ func (h *PostOrderHandler) handle(c *fiber.Ctx) error {
 		UserID: uid,
 	}
 	err = h.postOrderService.SaveOrder(c.Context(), order)
-	if e, ok := err.(errOrderExists); ok && e.IsErrOrderExists() {
+	if errors.Is(err, services.ErrOrderExists) {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusOK)
 	}
-	if e, ok := err.(errWrongNum); ok && e.IsErrWrongNum() {
+	if errors.Is(err, services.ErrWrongNum) {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusUnprocessableEntity)
 	}
-	if e, ok := err.(errOrderConflict); ok && e.IsErrOrderConflict() {
+	if errors.Is(err, services.ErrOrderConflict) {
 		logger.Log.Debug("path:"+c.Path(), zap.Error(err))
 		return c.SendStatus(fiber.StatusConflict)
 	}
