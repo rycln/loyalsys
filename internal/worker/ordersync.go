@@ -38,7 +38,6 @@ func (worker *OrderSyncWorker) Run(ctx context.Context) chan struct{} {
 	doneCh := make(chan struct{})
 
 	var wg sync.WaitGroup
-	wg.Add(2)
 
 	ordersCh := make(chan *models.OrderDB, ordersChanBuffer)
 

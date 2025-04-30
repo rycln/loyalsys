@@ -44,6 +44,8 @@ func newOrderGetWorker(api getAPI, storage getStorager, cfg *SyncWorkerConfig) *
 }
 
 func (worker *orderGetWorker) run(ctx context.Context, wg *sync.WaitGroup, orderCh chan<- *models.OrderDB) {
+	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 
