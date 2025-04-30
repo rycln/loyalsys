@@ -3,7 +3,7 @@ package worker
 import "time"
 
 const (
-	defaultTickerPeriod = time.Duration(10) * time.Second
+	defaultTickerPeriod = time.Duration(5) * time.Second
 	defaultTimeout      = time.Duration(5) * time.Second
 	defaultFanOutPool   = 10
 )
