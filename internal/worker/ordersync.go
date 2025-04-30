@@ -43,7 +43,7 @@ func NewOrderSyncWorker(api syncAPI, storage syncStorager, cfg *SyncWorkerConfig
 	}
 }
 
-func (worker *OrderSyncWorker) Run(stopCh <-chan struct{}) chan struct{} {
+func (worker *OrderSyncWorker) Run(ctx context.Context) chan struct{} {
 	doneCh := make(chan struct{})
 
 	go func() {
@@ -54,22 +54,22 @@ func (worker *OrderSyncWorker) Run(stopCh <-chan struct{}) chan struct{} {
 
 		for {
 			select {
-			case <-stopCh:
+			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				err := worker.updateOrdersBatch(stopCh)
+				updateCtx, ctxCancel := context.WithCancel(ctx)
+
+				err := worker.updateOrdersBatch(updateCtx)
+				if err != nil {
+					logger.Log.Debug("worker error", zap.Error(err))
+				}
 				if e, ok := err.(errRetryAfter); ok && e.IsErrRetryAfter() {
 					dur := e.GetRetryAfterDuration()
 					ticker.Reset(dur)
 					logger.Log.Info("worker retry after", zap.Duration("duration, sec:", dur))
-					continue
 				}
-				if errors.Is(err, errNoOrderNums) {
-					continue
-				}
-				if err != nil {
-					logger.Log.Debug("worker error", zap.Error(err))
-				}
+
+				ctxCancel()
 			}
 		}
 	}()
@@ -77,33 +77,33 @@ func (worker *OrderSyncWorker) Run(stopCh <-chan struct{}) chan struct{} {
 	return doneCh
 }
 
-func (worker *OrderSyncWorker) updateOrdersBatch(stopCh <-chan struct{}) error {
-	orderNums, err := worker.getOrderNums()
+func (worker *OrderSyncWorker) updateOrdersBatch(ctx context.Context) error {
+	orderNums, err := worker.getOrderNums(ctx)
 	if err != nil {
 		return err
 	}
 
-	numsChan := orderNumbersGenerator(stopCh, orderNums)
-	resultChans := worker.ordersFanOut(stopCh, numsChan)
-	resultCh := ordersFanIn(stopCh, resultChans)
+	numsChan := orderNumbersGenerator(ctx, orderNums)
+	resultChans := worker.ordersFanOut(ctx, numsChan)
+	resultCh := ordersFanIn(ctx, resultChans)
 
-	updatedOrders, err := updateConsumer(stopCh, resultCh)
+	updatedOrders, err := updateConsumer(ctx, resultCh)
 	if err != nil {
 		return err
 	}
 
-	err = worker.updateOrders(updatedOrders)
+	err = worker.updateOrders(ctx, updatedOrders)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (worker *OrderSyncWorker) getOrderNums() ([]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), worker.cfg.timeout)
+func (worker *OrderSyncWorker) getOrderNums(ctx context.Context) ([]string, error) {
+	ctxDB, cancel := context.WithTimeout(ctx, worker.cfg.timeout)
 	defer cancel()
 
-	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctx)
+	orderNums, err := worker.storage.GetInconclusiveOrderNums(ctxDB)
 	if err != nil {
 		return nil, err
 	}
@@ -113,12 +113,12 @@ func (worker *OrderSyncWorker) getOrderNums() ([]string, error) {
 	return orderNums, nil
 }
 
-func updateConsumer(stopCh <-chan struct{}, resultCh chan updateOrderResult) ([]*models.OrderDB, error) {
+func updateConsumer(ctx context.Context, resultCh chan updateOrderResult) ([]*models.OrderDB, error) {
 	var updatedOrders []*models.OrderDB
 
 	for result := range resultCh {
 		select {
-		case <-stopCh:
+		case <-ctx.Done():
 			return nil, nil
 		case <-resultCh:
 			if err, ok := result.err.(errRetryAfter); ok && err.IsErrRetryAfter() {
@@ -135,11 +135,11 @@ func updateConsumer(stopCh <-chan struct{}, resultCh chan updateOrderResult) ([]
 	return updatedOrders, nil
 }
 
-func (worker *OrderSyncWorker) updateOrders(updatedOrders []*models.OrderDB) error {
-	ctx, cancel := context.WithTimeout(context.Background(), worker.cfg.timeout)
+func (worker *OrderSyncWorker) updateOrders(ctx context.Context, updatedOrders []*models.OrderDB) error {
+	ctxDB, cancel := context.WithTimeout(ctx, worker.cfg.timeout)
 	defer cancel()
 
-	err := worker.storage.UpdateOrdersBatch(ctx, updatedOrders)
+	err := worker.storage.UpdateOrdersBatch(ctxDB, updatedOrders)
 	if err != nil {
 		return err
 	}
