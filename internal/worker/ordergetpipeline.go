@@ -12,8 +12,26 @@ type updateOrderResult struct {
 	err   error
 }
 
-func (worker *OrderSyncWorker) ordersFanOut(ctx context.Context, inputNumCh <-chan string) []chan updateOrderResult {
-	channels := make([]chan updateOrderResult, worker.cfg.fanOutPool)
+func orderNumbersGenerator(ctx context.Context, nums []string) <-chan string {
+	inputNumCh := make(chan string)
+
+	go func() {
+		defer close(inputNumCh)
+
+		for _, num := range nums {
+			select {
+			case <-ctx.Done():
+				return
+			case inputNumCh <- num:
+			}
+		}
+	}()
+
+	return inputNumCh
+}
+
+func (worker *orderGetWorker) ordersFanOut(ctx context.Context, inputNumCh <-chan string) []<-chan updateOrderResult {
+	channels := make([]<-chan updateOrderResult, worker.cfg.fanOutPool)
 
 	for i := 0; i < worker.cfg.fanOutPool; i++ {
 		resultCh := worker.getUpdatedOrderByNum(ctx, inputNumCh)
@@ -23,7 +41,7 @@ func (worker *OrderSyncWorker) ordersFanOut(ctx context.Context, inputNumCh <-ch
 	return channels
 }
 
-func (worker *OrderSyncWorker) getUpdatedOrderByNum(ctx context.Context, inputNumCh <-chan string) chan updateOrderResult {
+func (worker *orderGetWorker) getUpdatedOrderByNum(ctx context.Context, inputNumCh <-chan string) <-chan updateOrderResult {
 	resultCh := make(chan updateOrderResult)
 
 	go func() {
@@ -60,7 +78,7 @@ func (worker *OrderSyncWorker) getUpdatedOrderByNum(ctx context.Context, inputNu
 	return resultCh
 }
 
-func ordersFanIn(ctx context.Context, channels []chan updateOrderResult) chan updateOrderResult {
+func ordersFanIn(ctx context.Context, channels []<-chan updateOrderResult) <-chan updateOrderResult {
 	resultCh := make(chan updateOrderResult)
 
 	var wg sync.WaitGroup
@@ -91,20 +109,26 @@ func ordersFanIn(ctx context.Context, channels []chan updateOrderResult) chan up
 	return resultCh
 }
 
-func orderNumbersGenerator(ctx context.Context, nums []string) chan string {
-	inputNumCh := make(chan string)
+func ordersResultDispatcher(ctx context.Context, resultCh <-chan updateOrderResult, ordersCh chan<- *models.OrderDB) <-chan error {
+	errCh := make(chan error)
 
 	go func() {
-		defer close(inputNumCh)
+		defer close(errCh)
 
-		for _, num := range nums {
-			select {
-			case <-ctx.Done():
+		select {
+		case <-ctx.Done():
+			return
+		case result, ok := <-resultCh:
+			if !ok {
 				return
-			case inputNumCh <- num:
+			}
+			if result.err != nil {
+				errCh <- result.err
+			} else {
+				ordersCh <- result.order
 			}
 		}
 	}()
 
-	return inputNumCh
+	return errCh
 }

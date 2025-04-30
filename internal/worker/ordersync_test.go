@@ -72,7 +72,7 @@ func TestOrderSyncWorker_Run(t *testing.T) {
 	t.Run("get orders num error", func(t *testing.T) {
 		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(nil, errTest)
 
-		err := worker.updateOrdersBatch(ctx)
+		err := worker.getOrdersBatch(ctx)
 		assert.ErrorIs(t, err, errTest)
 	})
 
