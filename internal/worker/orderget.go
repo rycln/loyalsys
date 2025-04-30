@@ -44,27 +44,29 @@ func newOrderGetWorker(api getAPI, storage getStorager, cfg *SyncWorkerConfig) *
 }
 
 func (worker *orderGetWorker) run(ctx context.Context, wg *sync.WaitGroup, orderCh chan<- *models.OrderDB) {
-	defer wg.Done()
+	go func() {
+		defer wg.Done()
 
-	ticker := time.NewTicker(worker.cfg.tickerPeriod)
-	defer ticker.Stop()
+		ticker := time.NewTicker(worker.cfg.tickerPeriod)
+		defer ticker.Stop()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			err := worker.getOrders(ctx, orderCh)
-			if err != nil {
-				logger.Log.Debug("get orders error", zap.Error(err))
-			}
-			if e, ok := err.(errRetryAfter); ok && e.IsErrRetryAfter() {
-				dur := e.GetRetryAfterDuration()
-				ticker.Reset(dur)
-				logger.Log.Info("worker retry after", zap.Duration("duration, sec:", dur))
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				err := worker.getOrders(ctx, orderCh)
+				if err != nil {
+					logger.Log.Debug("get orders error", zap.Error(err))
+				}
+				if e, ok := err.(errRetryAfter); ok && e.IsErrRetryAfter() {
+					dur := e.GetRetryAfterDuration()
+					ticker.Reset(dur)
+					logger.Log.Info("worker retry after", zap.Duration("duration, sec:", dur))
+				}
 			}
 		}
-	}
+	}()
 }
 
 func (worker *orderGetWorker) getOrders(ctx context.Context, orderCh chan<- *models.OrderDB) error {

@@ -33,41 +33,43 @@ func newOrderUpdateWorker(storage updateStorager, cfg *SyncWorkerConfig) *orderU
 }
 
 func (worker *orderUpdateWorker) run(ctx context.Context, wg *sync.WaitGroup, orderCh <-chan *models.OrderDB) {
-	defer wg.Done()
+	go func() {
+		defer wg.Done()
 
-	ticker := time.NewTicker(worker.cfg.tickerPeriod)
-	defer ticker.Stop()
+		ticker := time.NewTicker(worker.cfg.tickerPeriod)
+		defer ticker.Stop()
 
-	var updatedOrdersBuf = make([]*models.OrderDB, 0, ordersMaxBufSize)
+		var updatedOrdersBuf = make([]*models.OrderDB, 0, ordersMaxBufSize)
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case order, ok := <-orderCh:
-			if !ok {
+		for {
+			select {
+			case <-ctx.Done():
 				return
-			}
-			if len(updatedOrdersBuf) == ordersMaxBufSize {
-				err := worker.updateOrders(ctx, updatedOrdersBuf)
-				if err != nil {
-					logger.Log.Debug("update orders error", zap.Error(err))
-					continue
+			case order, ok := <-orderCh:
+				if !ok {
+					return
 				}
-				updatedOrdersBuf = updatedOrdersBuf[:0]
-			}
-			updatedOrdersBuf = append(updatedOrdersBuf, order)
-		case <-ticker.C:
-			if len(updatedOrdersBuf) > 0 {
-				err := worker.updateOrders(ctx, updatedOrdersBuf)
-				if err != nil {
-					logger.Log.Debug("update orders error", zap.Error(err))
-					continue
+				if len(updatedOrdersBuf) == ordersMaxBufSize {
+					err := worker.updateOrders(ctx, updatedOrdersBuf)
+					if err != nil {
+						logger.Log.Debug("update orders error", zap.Error(err))
+						continue
+					}
+					updatedOrdersBuf = updatedOrdersBuf[:0]
 				}
-				updatedOrdersBuf = updatedOrdersBuf[:0]
+				updatedOrdersBuf = append(updatedOrdersBuf, order)
+			case <-ticker.C:
+				if len(updatedOrdersBuf) > 0 {
+					err := worker.updateOrders(ctx, updatedOrdersBuf)
+					if err != nil {
+						logger.Log.Debug("update orders error", zap.Error(err))
+						continue
+					}
+					updatedOrdersBuf = updatedOrdersBuf[:0]
+				}
 			}
 		}
-	}
+	}()
 }
 
 func (worker *orderUpdateWorker) updateOrders(ctx context.Context, updatedOrders []*models.OrderDB) error {
