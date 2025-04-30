@@ -12,18 +12,18 @@ type updateOrderResult struct {
 	err   error
 }
 
-func (worker *OrderSyncWorker) ordersFanOut(stopCh <-chan struct{}, inputNumCh <-chan string) []chan updateOrderResult {
+func (worker *OrderSyncWorker) ordersFanOut(ctx context.Context, inputNumCh <-chan string) []chan updateOrderResult {
 	channels := make([]chan updateOrderResult, worker.cfg.fanOutPool)
 
 	for i := 0; i < worker.cfg.fanOutPool; i++ {
-		resultCh := worker.getUpdatedOrderByNum(stopCh, inputNumCh)
+		resultCh := worker.getUpdatedOrderByNum(ctx, inputNumCh)
 		channels[i] = resultCh
 	}
 
 	return channels
 }
 
-func (worker *OrderSyncWorker) getUpdatedOrderByNum(stopCh <-chan struct{}, inputNumCh <-chan string) chan updateOrderResult {
+func (worker *OrderSyncWorker) getUpdatedOrderByNum(ctx context.Context, inputNumCh <-chan string) chan updateOrderResult {
 	resultCh := make(chan updateOrderResult)
 
 	go func() {
@@ -32,9 +32,10 @@ func (worker *OrderSyncWorker) getUpdatedOrderByNum(stopCh <-chan struct{}, inpu
 		for num := range inputNumCh {
 			var orderDB *models.OrderDB
 
-			ctx, cancel := context.WithTimeout(context.Background(), worker.cfg.timeout)
+			ctxAPI, cancel := context.WithTimeout(ctx, worker.cfg.timeout)
 			defer cancel()
-			orderAccrual, err := worker.api.GetOrderFromAccrual(ctx, num)
+
+			orderAccrual, err := worker.api.GetOrderFromAccrual(ctxAPI, num)
 			if err == nil {
 				orderDB = &models.OrderDB{
 					Number:  orderAccrual.Number,
@@ -49,7 +50,7 @@ func (worker *OrderSyncWorker) getUpdatedOrderByNum(stopCh <-chan struct{}, inpu
 			}
 
 			select {
-			case <-stopCh:
+			case <-ctx.Done():
 				return
 			case resultCh <- result:
 			}
@@ -59,7 +60,7 @@ func (worker *OrderSyncWorker) getUpdatedOrderByNum(stopCh <-chan struct{}, inpu
 	return resultCh
 }
 
-func ordersFanIn(stopCh <-chan struct{}, channels []chan updateOrderResult) chan updateOrderResult {
+func ordersFanIn(ctx context.Context, channels []chan updateOrderResult) chan updateOrderResult {
 	resultCh := make(chan updateOrderResult)
 
 	var wg sync.WaitGroup
@@ -74,7 +75,7 @@ func ordersFanIn(stopCh <-chan struct{}, channels []chan updateOrderResult) chan
 
 			for result := range chClosure {
 				select {
-				case <-stopCh:
+				case <-ctx.Done():
 					return
 				case resultCh <- result:
 				}
@@ -90,7 +91,7 @@ func ordersFanIn(stopCh <-chan struct{}, channels []chan updateOrderResult) chan
 	return resultCh
 }
 
-func orderNumbersGenerator(stopCh <-chan struct{}, nums []string) chan string {
+func orderNumbersGenerator(ctx context.Context, nums []string) chan string {
 	inputNumCh := make(chan string)
 
 	go func() {
@@ -98,7 +99,7 @@ func orderNumbersGenerator(stopCh <-chan struct{}, nums []string) chan string {
 
 		for _, num := range nums {
 			select {
-			case <-stopCh:
+			case <-ctx.Done():
 				return
 			case inputNumCh <- num:
 			}

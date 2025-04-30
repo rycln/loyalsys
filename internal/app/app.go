@@ -32,10 +32,9 @@ const shutdownTimeout = 5 * time.Second
 
 type App struct {
 	*fiber.App
-	cfg          *config.Cfg
-	db           *sql.DB
-	workerStopCh chan struct{}
-	workerDoneCh chan struct{}
+	cfg    *config.Cfg
+	db     *sql.DB
+	worker *worker.OrderSyncWorker
 }
 
 func New() (*App, error) {
@@ -70,9 +69,6 @@ func New() (*App, error) {
 		Build()
 	orderUpdater := worker.NewOrderSyncWorker(client, orderStrg, workerCfg)
 
-	stopCh := make(chan struct{})
-	doneCh := orderUpdater.Run(stopCh)
-
 	passwordStrategy := password.NewBCryptHasher()
 	userService := services.NewUserService(userStrg, passwordStrategy)
 	orderService := services.NewOrderService(orderStrg)
@@ -106,15 +102,19 @@ func New() (*App, error) {
 	app.Get("/api/user/withdrawals", timeout.NewWithContext(getWithdrawalsHandler, cfg.Timeout))
 
 	return &App{
-		App:          app,
-		cfg:          cfg,
-		db:           database,
-		workerStopCh: stopCh,
-		workerDoneCh: doneCh,
+		App:    app,
+		cfg:    cfg,
+		db:     database,
+		worker: orderUpdater,
 	}, nil
 }
 
 func (app *App) Run() error {
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+
+	doneCh := app.worker.Run(workerCtx)
+
 	go func() {
 		err := app.Listen(app.cfg.RunAddr)
 		if err != nil {
@@ -127,10 +127,12 @@ func (app *App) Run() error {
 
 	<-shutdown
 
-	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	workerCancel()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
-	err := app.shutdown(ctx)
+	err := app.shutdown(shutdownCtx, doneCh)
 	if err != nil {
 		return fmt.Errorf("shutdown error: %v", err)
 	}
@@ -145,13 +147,11 @@ func (app *App) Run() error {
 	return nil
 }
 
-func (app *App) shutdown(ctx context.Context) error {
-	close(app.workerStopCh)
-
+func (app *App) shutdown(ctx context.Context, doneCh <-chan struct{}) error {
 	select {
 	case <-ctx.Done():
 		return fmt.Errorf("worker shutdown timeout: %w", ctx.Err())
-	case <-app.workerDoneCh:
+	case <-doneCh:
 	}
 
 	if err := app.App.Shutdown(); err != nil {
