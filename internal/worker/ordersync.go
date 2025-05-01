@@ -7,10 +7,8 @@ import (
 	"github.com/rycln/loyalsys/internal/models"
 )
 
-//go:generate mockgen -source=$GOFILE -destination=./mocks/mock_$GOFILE -package=mocks
-
 const (
-	ordersChanBuffer = 1024
+	ordersChanBufferSize = 1024
 )
 
 type syncAPI interface {
@@ -39,7 +37,7 @@ func (worker *OrderSyncWorker) Run(ctx context.Context) chan struct{} {
 
 	var wg sync.WaitGroup
 
-	ordersCh := make(chan *models.OrderDB, ordersChanBuffer)
+	ordersCh := make(chan *models.OrderDB, ordersChanBufferSize)
 
 	worker.getter.run(ctx, &wg, ordersCh)
 	worker.updater.run(ctx, &wg, ordersCh)

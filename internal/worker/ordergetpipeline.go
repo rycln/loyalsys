@@ -115,17 +115,16 @@ func ordersResultDispatcher(ctx context.Context, resultCh <-chan updateOrderResu
 	go func() {
 		defer close(errCh)
 
-		select {
-		case <-ctx.Done():
-			return
-		case result, ok := <-resultCh:
-			if !ok {
+		for result := range resultCh {
+			select {
+			case <-ctx.Done():
 				return
-			}
-			if result.err != nil {
-				errCh <- result.err
-			} else {
-				ordersCh <- result.order
+			default:
+				if result.err != nil {
+					errCh <- result.err
+				} else {
+					ordersCh <- result.order
+				}
 			}
 		}
 	}()

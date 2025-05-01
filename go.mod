@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/ShiraazMoollatjie/goluhn v0.0.0-20211017190329-0d86158c056a
 	github.com/caarlos0/env/v11 v11.3.1
+	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gofiber/contrib/fiberzap/v2 v2.1.6
 	github.com/gofiber/contrib/jwt v1.1.0
