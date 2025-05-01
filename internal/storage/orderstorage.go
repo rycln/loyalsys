@@ -90,17 +90,16 @@ func (s *OrderStorage) UpdateOrdersBatch(ctx context.Context, orders []*models.O
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, sqlUpdateOrdersBatch)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	defer stmt.Close()
 
 	for _, order := range orders {
 		if _, err := stmt.ExecContext(ctx, order.Status, order.Accrual, order.Number); err != nil {
-			tx.Rollback()
 			return err
 		}
 	}

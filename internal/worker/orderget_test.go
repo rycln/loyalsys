@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fortytw2/leaktest"
 	"github.com/golang/mock/gomock"
 	"github.com/rycln/loyalsys/internal/models"
 	"github.com/rycln/loyalsys/internal/worker/mocks"
@@ -19,12 +20,11 @@ const (
 
 var errTest = errors.New("test error")
 
-func TestOrderSyncWorker_Run(t *testing.T) {
+func Test_orderGetWorker_getOrders(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	testOrderNums := []string{
 		"123",
@@ -50,48 +50,53 @@ func TestOrderSyncWorker_Run(t *testing.T) {
 		},
 	}
 
-	mAPI := mocks.NewMocksyncAPI(ctrl)
-	mStrg := mocks.NewMocksyncStorager(ctrl)
+	var testCh = make(chan *models.OrderDB, 10)
+
+	mAPI := mocks.NewMockgetAPI(ctrl)
+	mStrg := mocks.NewMockgetStorager(ctrl)
 	testCfg := NewSyncWorkerConfigBuilder().
 		WithTimeout(testTimeout).
 		WithTickerPeriod(testTickerPeriod).
 		Build()
-	worker := NewOrderSyncWorker(mAPI, mStrg, testCfg)
+	worker := newOrderGetWorker(mAPI, mStrg, testCfg)
 
 	t.Run("valid test", func(t *testing.T) {
 		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(testOrderNums, nil)
 		for i, testOrder := range testOrders {
 			mAPI.EXPECT().GetOrderFromAccrual(gomock.Any(), testOrderNums[i]).Return(testOrder, nil)
 		}
-		mStrg.EXPECT().UpdateOrdersBatch(gomock.Any(), gomock.Any()).Return(nil)
 
-		err := worker.updateOrdersBatch(ctx)
+		err := worker.getOrders(context.Background(), testCh)
 		assert.NoError(t, err)
+
 	})
 
-	t.Run("get orders num error", func(t *testing.T) {
+	t.Run("get order nums some error", func(t *testing.T) {
 		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(nil, errTest)
 
-		err := worker.updateOrdersBatch(ctx)
-		assert.ErrorIs(t, err, errTest)
+		err := worker.getOrders(context.Background(), testCh)
+		assert.Error(t, err)
 	})
 
-	t.Run("zero len nums list", func(t *testing.T) {
-		var zeroOrderNums []string
-		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(zeroOrderNums, nil)
+	t.Run("get order no nums error", func(t *testing.T) {
+		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(nil, nil)
 
-		err := worker.updateOrdersBatch(ctx)
+		err := worker.getOrders(context.Background(), testCh)
 		assert.ErrorIs(t, err, errNoOrderNums)
 	})
 
-	t.Run("get orders num error", func(t *testing.T) {
-		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(testOrderNums, nil)
-		for i, testOrder := range testOrders {
-			mAPI.EXPECT().GetOrderFromAccrual(gomock.Any(), testOrderNums[i]).Return(testOrder, nil)
+	t.Run("retry after error", func(t *testing.T) {
+		orderNum := []string{
+			"123",
 		}
-		mStrg.EXPECT().UpdateOrdersBatch(gomock.Any(), gomock.Any()).Return(errTest)
 
-		err := worker.updateOrdersBatch(ctx)
-		assert.ErrorIs(t, err, errTest)
+		mErr := mocks.NewMockerrRetryAfter(ctrl)
+		mErr.EXPECT().IsErrRetryAfter().Return(true)
+
+		mStrg.EXPECT().GetInconclusiveOrderNums(gomock.Any()).Return(orderNum, nil)
+		mAPI.EXPECT().GetOrderFromAccrual(gomock.Any(), gomock.Any()).Return(nil, mErr)
+
+		err := worker.getOrders(context.Background(), testCh)
+		assert.Error(t, err, mErr)
 	})
 }
