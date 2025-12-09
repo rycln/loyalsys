@@ -59,5 +59,5 @@
 
 ## Лицензия
 
-**MIT License**.
+MIT License
 
